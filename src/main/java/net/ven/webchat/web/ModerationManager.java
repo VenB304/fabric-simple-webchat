@@ -1,6 +1,6 @@
-package com.example.webchat.web;
+package net.ven.webchat.web;
 
-import com.example.webchat.config.ModConfig;
+import net.ven.webchat.config.ModConfig;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.fabricmc.loader.api.FabricLoader;

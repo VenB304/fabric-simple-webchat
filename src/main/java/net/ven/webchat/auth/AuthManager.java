@@ -1,4 +1,4 @@
-package com.example.webchat.auth;
+package net.ven.webchat.auth;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -25,6 +25,13 @@ public class AuthManager {
     // Player UUID -> OTP Code
     private static final Map<UUID, String> otpCache = new ConcurrentHashMap<>();
 
+    // IP -> Last Request Time
+    private static final Map<String, Long> otpRateLimit = new ConcurrentHashMap<>();
+
+    // Executor for async IO
+    private static final java.util.concurrent.ExecutorService ioExecutor = java.util.concurrent.Executors
+            .newSingleThreadExecutor();
+
     static {
         loadSessions();
     }
@@ -46,6 +53,18 @@ public class AuthManager {
         return false;
     }
 
+    public static boolean canRequestOtp(String ip) {
+        long now = System.currentTimeMillis();
+        long last = otpRateLimit.getOrDefault(ip, 0L);
+        long limit = net.ven.webchat.config.ModConfig.getInstance().otpRateLimitSeconds * 1000L;
+
+        if (now - last < limit) {
+            return false;
+        }
+        otpRateLimit.put(ip, now);
+        return true;
+    }
+
     public static String createSession(UUID playerUuid, String username) {
         String token = UUID.randomUUID().toString();
         // Expires in 30 days
@@ -58,7 +77,7 @@ public class AuthManager {
     }
 
     public static Session verifySession(String token) {
-        if (token == null)
+        if (token == null || token.isEmpty())
             return null;
         Session session = sessions.get(token);
         if (session != null) {
@@ -88,11 +107,14 @@ public class AuthManager {
     }
 
     private static void saveSessions() {
-        try (FileWriter writer = new FileWriter(SESSION_FILE)) {
-            GSON.toJson(sessions, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Run in background to avoid blocking main thread or web server thread
+        ioExecutor.submit(() -> {
+            try (FileWriter writer = new FileWriter(SESSION_FILE)) {
+                GSON.toJson(sessions, writer);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static class Session {

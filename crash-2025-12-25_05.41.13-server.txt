@@ -1,0 +1,233 @@
+---- Minecraft Crash Report ----
+// There are four lights!
+
+Time: 2025-12-25 05:41:13
+Description: Exception in server tick loop
+
+java.lang.NoSuchMethodError: 'void net.minecraft.class_3222.method_43496(net.minecraft.class_2561)'
+	at knot//net.ven.webchat.web.WebServer.lambda$handleJsonMessage$7(WebServer.java:255)
+	at knot//net.minecraft.class_3738.run(class_3738.java:18)
+	at knot//net.minecraft.class_1255.method_18859(class_1255.java:168)
+	at knot//net.minecraft.class_4093.method_18859(class_4093.java:23)
+	at knot//net.minecraft.server.MinecraftServer.method_24306(MinecraftServer.java:957)
+	at knot//net.minecraft.server.MinecraftServer.method_18859(MinecraftServer.java:182)
+	at knot//net.minecraft.class_1255.method_16075(class_1255.java:142)
+	at knot//net.minecraft.server.MinecraftServer.method_20415(MinecraftServer.java:939)
+	at knot//net.minecraft.server.MinecraftServer.method_16075(MinecraftServer.java:933)
+	at knot//net.minecraft.class_1255.method_5383(class_1255.java:123)
+	at knot//net.minecraft.server.MinecraftServer.method_16208(MinecraftServer.java:901)
+	at knot//net.minecraft.server.MinecraftServer.method_29741(MinecraftServer.java:781)
+	at knot//net.minecraft.server.MinecraftServer.method_29739(MinecraftServer.java:297)
+	at java.base/java.lang.Thread.run(Thread.java:1575)
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21.10
+	Minecraft Version ID: 1.21.10
+	Operating System: Windows 10 (amd64) version 10.0
+	Java Version: 23, Oracle Corporation
+	Java VM Version: Java HotSpot(TM) 64-Bit Server VM (mixed mode, sharing), Oracle Corporation
+	Memory: 252646160 bytes (240 MiB) / 815792128 bytes (778 MiB) up to 3221225472 bytes (3072 MiB)
+	CPUs: 8
+	Processor Vendor: GenuineIntel
+	Processor Name: Intel(R) Core(TM) i5-8350U CPU @ 1.70GHz
+	Identifier: Intel64 Family 6 Model 142 Stepping 10
+	Microarchitecture: Coffee Lake
+	Frequency (GHz): 1.90
+	Number of physical packages: 1
+	Number of physical CPUs: 4
+	Number of logical CPUs: 8
+	Graphics card #0 name: Intel(R) UHD Graphics 620
+	Graphics card #0 vendor: Intel Corporation
+	Graphics card #0 VRAM (MiB): 1024.00
+	Graphics card #0 deviceId: VideoController1
+	Graphics card #0 versionInfo: 31.0.101.2115
+	Memory slot #0 capacity (MiB): 4096.00
+	Memory slot #0 clockSpeed (GHz): 2.40
+	Memory slot #0 type: DDR4
+	Memory slot #1 capacity (MiB): 4096.00
+	Memory slot #1 clockSpeed (GHz): 2.40
+	Memory slot #1 type: DDR4
+	Virtual memory max (MiB): 12931.09
+	Virtual memory used (MiB): 6050.65
+	Swap memory total (MiB): 4864.00
+	Swap memory used (MiB): 365.07
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 85788.62, total: 243569.34
+	Space in storage for workdir (MiB): available: 85788.62, total: 243569.34
+	JVM Flags: 2 total; -Xms256M -Xmx3072M
+	Debug Flags: 0 total; 
+	Fabric Mods: 
+		alternate-current: Alternate Current 1.9.0
+		architectury: Architectury 18.0.8
+		betterstats: Better Statistics Screen 4.0.0+fabric-1.21.10
+		bluemap: BlueMap 5.13
+			com_flowpowered_flow-math: flow-math 1.0.3
+			de_bluecolored_bluenbt: bluenbt 3.3.0
+		c2me: Concurrent Chunk Management Engine 0.3.5.1.0+1.21.10
+			c2me-base: Concurrent Chunk Management Engine (Base) 0.3.5.1.0+1.21.10
+			c2me-fixes-chunkio-threading-issues: Concurrent Chunk Management Engine (Fixes/Chunk IO/Threading Issues) 0.3.5.1.0+1.21.10
+			c2me-fixes-general-threading-issues: Concurrent Chunk Management Engine (Fixes/General/Threading Issues) 0.3.5.1.0+1.21.10
+			c2me-fixes-worldgen-threading-issues: Concurrent Chunk Management Engine (Fixes/WorldGen/Threading Issues) 0.3.5.1.0+1.21.10
+			c2me-fixes-worldgen-vanilla-bugs: Concurrent Chunk Management Engine (Fixes/WorldGen/Vanilla Bugs) 0.3.5.1.0+1.21.10
+			c2me-notickvd: Concurrent Chunk Management Engine (No Tick View Distance) 0.3.5.1.0+1.21.10
+			c2me-opts-allocs: Concurrent Chunk Management Engine (Optimizations/Memory Allocations) 0.3.5.1.0+1.21.10
+			c2me-opts-chunkio: Concurrent Chunk Management Engine (Optimizations/Chunk IO) 0.3.5.1.0+1.21.10
+			c2me-opts-dfc: Concurrent Chunk Management Engine (Optimizations/Density Function Compiler) 0.3.5.1.0+1.21.10
+			c2me-opts-math: Concurrent Chunk Management Engine (Optimizations/Math) 0.3.5.1.0+1.21.10
+			c2me-opts-natives-math: Concurrent Chunk Management Engine (Optimizations/Natives Math) 0.3.5.1.0+1.21.10
+			c2me-opts-scheduling: Concurrent Chunk Management Engine (Optimizations/Scheduling) 0.3.5.1.0+1.21.10
+			c2me-opts-worldgen-general: Concurrent Chunk Management Engine (Optimizations/General WorldGen) 0.3.5.1.0+1.21.10
+			c2me-opts-worldgen-vanilla: Concurrent Chunk Management Engine (Optimizations/Vanilla WorldGen) 0.3.5.1.0+1.21.10
+			c2me-rewrites-chunk-serializer: Concurrent Chunk Management Engine (Rewrites/Chunk Serializer) 0.3.5.1.0+1.21.10
+			c2me-rewrites-chunk-system: Concurrent Chunk Management Engine (Rewrites/Chunk System) 0.3.5.1.0+1.21.10
+			c2me-rewrites-chunkio: Concurrent Chunk Management Engine (Rewrites/Chunk IO) 0.3.5.1.0+1.21.10
+			c2me-server-utils: Concurrent Chunk Management Engine (Server Utils) 0.3.5.1.0+1.21.10
+			c2me-threading-lighting: Concurrent Chunk Management Engine (Threading/Lighting) 0.3.5.1.0+1.21.10
+			com_electronwill_night-config_core: core 3.6.5
+			com_electronwill_night-config_toml: toml 3.6.5
+			com_ibm_async_asyncutil: asyncutil 0.1.0
+			io_reactivex_rxjava3_rxjava: rxjava 3.1.12
+			mixinsquared: MixinSquared 0.2.0-beta.6
+			net_objecthunter_exp4j: exp4j 0.4.8
+			org_jctools_jctools-core: jctools-core 4.0.5
+			org_reactivestreams_reactive-streams: reactive-streams 1.0.4
+		clumps: Clumps 28.0.0.1
+		fabric-api: Fabric API 0.138.3+1.21.10
+			fabric-api-base: Fabric API Base 1.0.0+14b92d896f
+			fabric-api-lookup-api-v1: Fabric API Lookup API (v1) 1.6.106+d17682156f
+			fabric-biome-api-v1: Fabric Biome API (v1) 16.1.0+c2417d4f6f
+			fabric-block-api-v1: Fabric Block API (v1) 1.1.5+d17682156f
+			fabric-block-view-api-v2: Fabric BlockView API (v2) 1.0.34+e4fd1b926f
+			fabric-command-api-v2: Fabric Command API (v2) 2.4.0+c0ab2d5d6f
+			fabric-content-registries-v0: Fabric Content Registries (v0) 10.2.6+b6a242646f
+			fabric-convention-tags-v1: Fabric Convention Tags 2.1.49+7f945d5b6f
+			fabric-convention-tags-v2: Fabric Convention Tags (v2) 2.17.0+ff7bc77d6f
+			fabric-crash-report-info-v1: Fabric Crash Report Info (v1) 0.3.18+33df5e6e6f
+			fabric-data-attachment-api-v1: Fabric Data Attachment API (v1) 1.8.33+cd3b9e596f
+			fabric-data-generation-api-v1: Fabric Data Generation API (v1) 23.2.27+d8b85ef16f
+			fabric-dimensions-v1: Fabric Dimensions API (v1) 4.0.22+38b9cc196f
+			fabric-entity-events-v1: Fabric Entity Events (v1) 2.1.13+fde3702c6f
+			fabric-events-interaction-v0: Fabric Events Interaction (v0) 4.0.36+5ba217126f
+			fabric-game-rule-api-v1: Fabric Game Rule API (v1) 1.1.1+e47eaae56f
+			fabric-item-api-v1: Fabric Item API (v1) 11.5.11+9bce411b6f
+			fabric-item-group-api-v1: Fabric Item Group API (v1) 4.2.27+86b3ae576f
+			fabric-lifecycle-events-v1: Fabric Lifecycle Events (v1) 2.6.9+33df5e6e6f
+			fabric-loot-api-v2: Fabric Loot API (v2) 3.0.67+3f89f5a56f
+			fabric-loot-api-v3: Fabric Loot API (v3) 2.0.14+d17682156f
+			fabric-message-api-v1: Fabric Message API (v1) 6.1.7+3154c1c86f
+			fabric-networking-api-v1: Fabric Networking API (v1) 5.1.0+b095d8db6f
+			fabric-object-builder-api-v1: Fabric Object Builder API (v1) 21.1.28+9bce411b6f
+			fabric-particles-v1: Fabric Particles (v1) 4.2.3+a0ee59a46f
+			fabric-recipe-api-v1: Fabric Recipe API (v1) 8.2.0+39709ef06f
+			fabric-registry-sync-v0: Fabric Registry Sync (v0) 6.1.42+679c8c5c6f
+			fabric-rendering-fluids-v1: Fabric Rendering Fluids (v1) 3.1.38+86b3ae576f
+			fabric-resource-conditions-api-v1: Fabric Resource Conditions API (v1) 5.0.28+33df5e6e6f
+			fabric-resource-loader-v0: Fabric Resource Loader (v0) 3.3.1+d4d4122a6f
+			fabric-resource-loader-v1: Fabric Resource Loader (v1) 1.0.4+14959b836f
+			fabric-screen-handler-api-v1: Fabric Screen Handler API (v1) 1.3.151+d17682156f
+			fabric-serialization-api-v1: Fabric Serialization API (v1) 1.0.0+d857c9766f
+			fabric-tag-api-v1: Fabric Tag API (v1) 1.2.13+2fa446b26f
+			fabric-transfer-api-v1: Fabric Transfer API (v1) 6.0.15+79ec2c126f
+			fabric-transitive-access-wideners-v1: Fabric Transitive Access Wideners (v1) 6.5.3+41eb43436f
+		fabric-language-kotlin: Fabric Language Kotlin 1.13.7+kotlin.2.2.21
+			org_jetbrains_kotlin_kotlin-reflect: kotlin-reflect 2.2.21
+			org_jetbrains_kotlin_kotlin-stdlib: kotlin-stdlib 2.2.21
+			org_jetbrains_kotlin_kotlin-stdlib-jdk7: kotlin-stdlib-jdk7 2.2.21
+			org_jetbrains_kotlin_kotlin-stdlib-jdk8: kotlin-stdlib-jdk8 2.2.21
+			org_jetbrains_kotlinx_atomicfu-jvm: atomicfu-jvm 0.29.0
+			org_jetbrains_kotlinx_kotlinx-coroutines-core-jvm: kotlinx-coroutines-core-jvm 1.10.2
+			org_jetbrains_kotlinx_kotlinx-coroutines-jdk8: kotlinx-coroutines-jdk8 1.10.2
+			org_jetbrains_kotlinx_kotlinx-datetime-jvm: kotlinx-datetime-jvm 0.7.1
+			org_jetbrains_kotlinx_kotlinx-io-bytestring-jvm: kotlinx-io-bytestring-jvm 0.8.0
+			org_jetbrains_kotlinx_kotlinx-io-core-jvm: kotlinx-io-core-jvm 0.8.0
+			org_jetbrains_kotlinx_kotlinx-serialization-cbor-jvm: kotlinx-serialization-cbor-jvm 1.9.0
+			org_jetbrains_kotlinx_kotlinx-serialization-core-jvm: kotlinx-serialization-core-jvm 1.9.0
+			org_jetbrains_kotlinx_kotlinx-serialization-json-jvm: kotlinx-serialization-json-jvm 1.9.0
+		fabricloader: Fabric Loader 0.18.2
+			mixinextras: MixinExtras 0.5.0
+		ferritecore: FerriteCore 8.0.2
+		floodgate: Floodgate 2.2.6-SNAPSHOT
+			aopalliance_aopalliance: aopalliance 1.0
+			com_google_guava_failureaccess: failureaccess 1.0.1
+			jakarta_inject_jakarta_inject-api: jakarta.inject-api 2.0.1
+			javax_inject_javax_inject: javax.inject 1
+			org_geysermc_cumulus_cumulus: cumulus 1.1.2
+			org_geysermc_event_events: events 1.1-SNAPSHOT
+			org_geysermc_geyser_common_unshaded: common 2.2.1-SNAPSHOT
+			org_java-websocket_java-websocket: Java-WebSocket 1.5.2
+			org_lanternpowered_lmbda: lmbda 2.0.0
+		geyser-fabric: Geyser-Fabric 2.9.2-SNAPSHOT
+			cloud: Cloud 2.0.0-beta.13
+				io_leangen_geantyref_geantyref: geantyref 1.3.15
+				org_incendo_cloud-brigadier: cloud-brigadier 2.0.0-beta.11
+				org_incendo_cloud-core: cloud-core 2.0.0
+				org_incendo_cloud-minecraft-modded-common-fabric-repack: cloud-minecraft-modded-common-fabric-repack 2.0.0-beta.13
+				org_incendo_cloud-services: cloud-services 2.0.0
+			com_google_errorprone_error_prone_annotations: error_prone_annotations 2.27.0
+			com_nukkitx_natives: natives 1.0.3
+			io_airlift_aircompressor: aircompressor 0.27
+			io_netty_netty-codec-haproxy: netty-codec-haproxy 4.2.7
+			net_jodah_expiringmap: expiringmap 0.5.10
+			net_kyori_adventure-api: adventure-api 4.25.0
+			net_kyori_adventure-key: adventure-key 4.25.0
+			net_kyori_adventure-nbt: adventure-nbt 4.25.0
+			net_kyori_adventure-text-serializer-commons: adventure-text-serializer-commons 4.25.0
+			net_kyori_adventure-text-serializer-gson: adventure-text-serializer-gson 4.25.0
+			net_kyori_adventure-text-serializer-json: adventure-text-serializer-json 4.25.0
+			net_kyori_adventure-text-serializer-json-legacy-impl: adventure-text-serializer-json-legacy-impl 4.25.0
+			net_kyori_adventure-text-serializer-legacy: adventure-text-serializer-legacy 4.25.0
+			net_kyori_adventure-text-serializer-plain: adventure-text-serializer-plain 4.25.0
+			net_kyori_examination-api: examination-api 1.3.0
+			net_kyori_examination-string: examination-string 1.3.0
+			net_kyori_option: option 1.1.0
+			net_lenni0451_commons_gson: gson 1.9.0
+			net_lenni0451_commons_httpclient: httpclient 1.9.0
+			net_raphimc_minecraftauth: MinecraftAuth 5.0.0
+			org_bitbucket_b_c_jose4j: jose4j 0.9.6
+			org_bstats_bstats-base: bstats-base 3.1.0
+			org_cloudburstmc_math_api: api 2.0
+			org_cloudburstmc_math_immutable: immutable 2.0
+			org_cloudburstmc_nbt: nbt 3.0.3
+			org_geysermc_api_base-api: base-api 1.0.2
+		jamlib: JamLib 1.3.5+1.21.10
+			blue_endless_jankson: jankson 1.2.3
+		java: Java HotSpot(TM) 64-Bit Server VM 23
+		krypton: Krypton 0.2.10
+			com_velocitypowered_velocity-native: velocity-native 3.4.0-SNAPSHOT
+		lithium: Lithium 0.20.1+mc1.21.10
+		minecraft: Minecraft 1.21.10
+		scalablelux: ScalableLux 0.1.6+fabric.c25518a
+		servercore: ServerCore 1.5.14+1.21.9
+			org_yaml_snakeyaml: snakeyaml 2.5
+			placeholder-api: Placeholder API 2.8.0+1.21.9
+			space_arim_dazzleconf_dazzleconf-core: dazzleconf-core 1.3.0-M2
+			space_arim_dazzleconf_dazzleconf-ext-snakeyaml: dazzleconf-ext-snakeyaml 1.3.0-M2
+		simple-webchat: Simple WebChat 5
+		skinrestorer: SkinRestorer 2.4.3+1.21.9-fabric
+			org_mineskin_java-client: java-client 3.0.6-SNAPSHOT
+		sort_it_out: Sort It Out! 1.1.4+1.21.10
+		spark: spark 1.10.152
+			fabric-permissions-api-v0: fabric-permissions-api 0.5.0
+		tcdcommons: TCDCommons API 4.0.1+fabric-1.21.10
+		tt20: TT20 0.7.2
+			net_snackbag_shit_shit: shit 1.2.3
+		vmp: Very Many Players 0.2.0+beta.7.217+1.21.10
+		voicechat: Simple Voice Chat 1.21.10-2.6.7
+			voicechat_api: Simple Voice Chat API 2.6.0
+	Server Running: true
+	Player Count: 1 / 20; [class_3222['VenB3455'/33, l='ServerLevel[world]', x=203.79, y=128.00, z=1.68]]
+	Active Data Packs: vanilla, fabric, fabric-convention-tags-v2
+	Available Data Packs: fabric, fabric-convention-tags-v2, minecart_improvements, redstone_experiments, trade_rebalance, vanilla
+	Enabled Feature Flags: minecraft:vanilla
+	World Generation: Stable
+	World Seed: 2786386421968123439
+	Suppressed Exceptions: ~~NONE~~
+	Is Modded: Definitely; Server brand changed to 'fabric'
+	Type: Dedicated Server (map_server.txt)

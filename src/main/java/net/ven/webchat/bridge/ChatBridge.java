@@ -1,4 +1,4 @@
-package com.example.webchat.bridge;
+package net.ven.webchat.bridge;
 
 import io.javalin.websocket.WsContext;
 import net.minecraft.server.MinecraftServer;

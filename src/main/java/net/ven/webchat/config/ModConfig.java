@@ -1,4 +1,4 @@
-package com.example.webchat.config;
+package net.ven.webchat.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -9,7 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class ModConfig {
-    private static ModConfig instance;
+    private static volatile ModConfig instance;
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("web-chat-mod.json")
             .toFile();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -32,6 +32,10 @@ public class ModConfig {
     public String sslKeyStorePath = "";
     public String sslKeyStorePassword = "";
     public boolean trustProxy = true;
+    public int otpRateLimitSeconds = 30;
+
+    // Moderation
+    public java.util.List<String> profanityList = java.util.Arrays.asList("badword", "naughty");
 
     public static ModConfig getInstance() {
         if (instance == null) {
@@ -44,6 +48,10 @@ public class ModConfig {
         if (CONFIG_FILE.exists()) {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 instance = GSON.fromJson(reader, ModConfig.class);
+                // Ensure defaults if missing (e.g. if loaded from old config)
+                if (instance.profanityList == null) {
+                    instance.profanityList = java.util.Arrays.asList("badword", "naughty");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 // Fallback to default

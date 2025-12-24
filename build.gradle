@@ -64,11 +64,12 @@ shadowJar {
     archiveClassifier.set("dev-shadow") // prevent overwriting the main jar immediately or conflict
     
     // Relocate to avoid conflicts
-    relocate 'io.javalin', 'com.example.webchat.shadow.javalin'
-    relocate 'com.fasterxml.jackson', 'com.example.webchat.shadow.jackson'
-    relocate 'org.eclipse.jetty', 'com.example.webchat.shadow.jetty'
+    // Relocate to avoid conflicts
+    relocate 'io.javalin', 'net.ven.webchat.shadow.javalin'
+    relocate 'com.fasterxml.jackson', 'net.ven.webchat.shadow.jackson'
+    relocate 'org.eclipse.jetty', 'net.ven.webchat.shadow.jetty'
     // Do NOT relocate SLF4J - use the game's logger integration
-    relocate 'kotlin', 'com.example.webchat.shadow.kotlin'
+    relocate 'kotlin', 'net.ven.webchat.shadow.kotlin'
 }
 
 remapJar {

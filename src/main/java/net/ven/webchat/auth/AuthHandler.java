@@ -1,6 +1,6 @@
-package com.example.webchat.auth;
+package net.ven.webchat.auth;
 
-import com.example.webchat.config.ModConfig;
+import net.ven.webchat.config.ModConfig;
 import io.javalin.websocket.WsContext;
 import io.javalin.websocket.WsConnectContext;
 

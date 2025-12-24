@@ -1,9 +1,9 @@
-package com.example.webchat.web;
+package net.ven.webchat.web;
 
-import com.example.webchat.bridge.ChatBridge;
-import com.example.webchat.auth.AuthHandler;
-import com.example.webchat.auth.AuthManager;
-import com.example.webchat.config.ModConfig;
+import net.ven.webchat.bridge.ChatBridge;
+import net.ven.webchat.auth.AuthHandler;
+import net.ven.webchat.auth.AuthManager;
+import net.ven.webchat.config.ModConfig;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.javalin.Javalin;
@@ -41,7 +41,7 @@ public class WebServer {
                             return sslConnector;
                         });
                     } else {
-                        com.example.webchat.WebChatMod.LOGGER.warn("SSL enabled but keystore path/password missing.");
+                        net.ven.webchat.WebChatMod.LOGGER.warn("SSL enabled but keystore path/password missing.");
                     }
                 }
             });
@@ -120,15 +120,30 @@ public class WebServer {
                     }
                     username = finalName;
 
-                    ChatBridge.activeSessions.add(ctx);
-                    ChatBridge.sessionUsernames.put(ctx, username);
-                    ctx.attribute("username", username);
-                    ctx.attribute("ip", realIp);
+                    // Only register as active chat user if fully authenticated
+                    boolean isAuthenticated = Boolean.TRUE.equals(ctx.attribute("authenticated"));
+                    if (isAuthenticated) {
+                        ChatBridge.activeSessions.add(ctx);
+                        ChatBridge.sessionUsernames.put(ctx, username);
+                        ctx.attribute("username", username);
+                        ctx.attribute("ip", realIp);
 
-                    com.example.webchat.WebChatMod.LOGGER.info("Web Client Connected: " + realIp + " as " + username);
+                        net.ven.webchat.WebChatMod.LOGGER.info("Web Client Connected: " + realIp + " as " + username);
 
-                    ChatBridge.notifyWebJoin(username);
-                    ChatBridge.sendHistoryTo(ctx);
+                        ChatBridge.notifyWebJoin(username);
+                        ChatBridge.sendHistoryTo(ctx);
+                    } else {
+                        // Handshake only (e.g. waiting for OTP)
+                        ctx.attribute("username", username); // Temp username
+                    }
+
+                    // Send Status to Client
+                    JsonObject status = new JsonObject();
+                    status.addProperty("type", "status");
+                    status.addProperty("authenticated", isAuthenticated);
+                    status.addProperty("authMode", ModConfig.getInstance().authMode.toString());
+                    status.addProperty("username", username);
+                    ctx.send(gson.toJson(status));
                 });
 
                 ws.onMessage(ctx -> {
@@ -205,7 +220,7 @@ public class WebServer {
 
             // Start
             app.start(ModConfig.getInstance().webPort);
-            com.example.webchat.WebChatMod.LOGGER
+            net.ven.webchat.WebChatMod.LOGGER
                     .info("Web Chat Server started on port " + ModConfig.getInstance().webPort);
         });
 
@@ -223,58 +238,59 @@ public class WebServer {
     }
 
     private static void handleJsonMessage(io.javalin.websocket.WsContext ctx, String type, JsonObject json) {
-        if ("request_otp".equals(type)) {
-            String username = json.has("username") ? json.get("username").getAsString() : null;
-            if (username == null || username.isEmpty())
-                return;
+        net.minecraft.server.MinecraftServer server = net.ven.webchat.bridge.ChatBridge.getServer();
+        if (server == null)
+            return;
 
-            // Find player
-            if (com.example.webchat.bridge.ChatBridge.getServer() == null)
-                return;
-            ServerPlayerEntity player = com.example.webchat.bridge.ChatBridge.getServer().getPlayerManager()
-                    .getPlayer(username);
-
-            if (player != null) {
-                String code = AuthManager.generateOTP(player.getUuid());
-                player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code));
-                ctx.send("{\"type\": \"otp_sent\"}");
-            } else {
-                ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
-            }
-        } else if ("verify_otp".equals(type)) {
-            String username = json.has("username") ? json.get("username").getAsString() : null;
-            String code = json.has("code") ? json.get("code").getAsString() : null;
-
-            if (username == null || code == null)
-                return;
-
-            if (com.example.webchat.bridge.ChatBridge.getServer() == null)
-                return;
-            ServerPlayerEntity player = com.example.webchat.bridge.ChatBridge.getServer().getPlayerManager()
-                    .getPlayer(username);
-            if (player != null) {
-                if (AuthManager.verifyOTP(player.getUuid(), code)) {
-                    String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
-                    ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
-                            + player.getName().getString() + "\"}");
-                } else {
-                    ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
+        server.execute(() -> {
+            if ("request_otp".equals(type)) {
+                String ip = ctx.attribute("ip");
+                if (ip != null && !AuthManager.canRequestOtp(ip)) {
+                    ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait.\"}");
+                    return;
                 }
-            } else {
-                ctx.send("{\"type\": \"error\", \"message\": \"Player not online to verify\"}");
-                // Technically we could verify via cached UUID if we had it, but for safety
-                // requiring online is good.
+
+                String username = json.has("username") ? json.get("username").getAsString() : null;
+                if (username == null || username.isEmpty())
+                    return;
+
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
+
+                if (player != null) {
+                    String code = AuthManager.generateOTP(player.getUuid());
+                    player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code),
+                            false);
+                    ctx.send("{\"type\": \"otp_sent\"}");
+                } else {
+                    ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
+                }
+            } else if ("verify_otp".equals(type)) {
+                String username = json.has("username") ? json.get("username").getAsString() : null;
+                String code = json.has("code") ? json.get("code").getAsString() : null;
+
+                if (username == null || code == null)
+                    return;
+
+                ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
+                if (player != null) {
+                    if (AuthManager.verifyOTP(player.getUuid(), code)) {
+                        String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
+                        ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
+                                + player.getName().getString() + "\"}");
+                    } else {
+                        ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
+                    }
+                } else {
+                    ctx.send("{\"type\": \"error\", \"message\": \"Player not online to verify\"}");
+                }
             }
-        }
+        });
     }
 
     private static boolean containsProfanity(String message) {
         String lower = message.toLowerCase();
-        // A few basic words. Users should really use a proper moderation bot/plugin if
-        // they need advanced stuff.
-        String[] badWords = { "badword", "naughty" };
-        for (String word : badWords) {
-            if (lower.contains(word))
+        for (String word : ModConfig.getInstance().profanityList) {
+            if (lower.contains(word.toLowerCase()))
                 return true;
         }
         return false;

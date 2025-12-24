@@ -1,22 +1,22 @@
 {
 	"schemaVersion": 1,
-	"id": "fabric-simple-webchat",
+	"id": "simple-webchat",
 	"version": "${version}",
-	"name": "Fabric Simple WebChat",
+	"name": "Simple WebChat",
 	"description": "A lightweight, server-side Fabric mod that adds a mobile-friendly web chat interface.",
 	"authors": [
-		"Me"
+		"Ven"
 	],
 	"contact": {
 		"homepage": "https://example.com/",
-		"sources": "https://github.com/example/fabric-simple-webchat"
+		"sources": "https://github.com/example/simple-webchat"
 	},
 	"license": "MIT",
-	"icon": "assets/web-chat-mod/icon.png",
+	"icon": "assets/simple-webchat/icon.png",
 	"environment": "server",
 	"entrypoints": {
 		"main": [
-			"com.example.webchat.WebChatMod"
+			"net.ven.webchat.WebChatMod"
 		]
 	},
 	"mixins": [],

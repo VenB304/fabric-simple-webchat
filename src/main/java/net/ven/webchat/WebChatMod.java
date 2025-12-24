@@ -1,21 +1,21 @@
-package com.example.webchat;
+package net.ven.webchat;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import com.example.webchat.config.ModConfig;
-import com.example.webchat.bridge.ChatBridge;
-import com.example.webchat.web.WebServer;
+import net.ven.webchat.config.ModConfig;
+import net.ven.webchat.bridge.ChatBridge;
+import net.ven.webchat.web.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WebChatMod implements ModInitializer {
-    public static final String MOD_ID = "web-chat-mod";
+    public static final String MOD_ID = "simple-webchat";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Initializing Web Chat Mod...");
+        LOGGER.info("Initializing Simple WebChat...");
 
         // 1. Load Config
         ModConfig.load();
@@ -63,5 +63,29 @@ public class WebChatMod implements ModInitializer {
 
             server.execute(() -> ChatBridge.broadcastUserList());
         });
+        // 5. Register Generic Commands
+        net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT
+                .register((dispatcher, registryAccess, environment) -> {
+                    dispatcher.register(net.minecraft.server.command.CommandManager.literal("simplewebchat")
+                            .requires(source -> source.hasPermissionLevel(2))
+                            .then(net.minecraft.server.command.CommandManager.literal("reload")
+                                    .executes(context -> {
+                                        ModConfig.load();
+                                        context.getSource().sendMessage(net.minecraft.text.Text
+                                                .literal("§a[SimpleWebChat] Configuration reloaded!"));
+                                        // Note: Some settings like Port require a restart.
+                                        return 1;
+                                    })));
+                    // Alias /swc
+                    dispatcher.register(net.minecraft.server.command.CommandManager.literal("swc")
+                            .requires(source -> source.hasPermissionLevel(2))
+                            .then(net.minecraft.server.command.CommandManager.literal("reload")
+                                    .executes(context -> {
+                                        ModConfig.load();
+                                        context.getSource().sendMessage(net.minecraft.text.Text
+                                                .literal("§a[SimpleWebChat] Configuration reloaded!"));
+                                        return 1;
+                                    })));
+                });
     }
 }
