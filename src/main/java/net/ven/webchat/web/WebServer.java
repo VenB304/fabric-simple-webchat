@@ -129,7 +129,6 @@ public class WebServer {
 
                         net.ven.webchat.WebChatMod.LOGGER.info("Web Client Connected: " + realIp + " as " + username);
 
-                        ChatBridge.notifyWebJoin(username);
                         ChatBridge.sendHistoryTo(ctx);
                     } else {
                         // Handshake only (e.g. waiting for OTP)
@@ -143,6 +142,11 @@ public class WebServer {
                     status.addProperty("authMode", ModConfig.getInstance().authMode.toString());
                     status.addProperty("username", username);
                     ctx.send(gson.toJson(status));
+
+                    // Notify Join AFTER status (so "Connected" appears before "Joined")
+                    if (isAuthenticated) {
+                        ChatBridge.notifyWebJoin(username);
+                    }
                 });
 
                 ws.onMessage(ctx -> {

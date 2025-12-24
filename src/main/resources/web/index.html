@@ -6,20 +6,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple WebChat</title>
     <style>
+        :root {
+            /* Default Light Mode */
+            --bg-body: #f5f5f5;
+            --bg-panel: #ffffff;
+            --bg-input: #ffffff;
+            --bg-header: #e0e0e0;
+            --bg-message: #ffffff;
+            --text-main: #333333;
+            --text-sec: #666666;
+            --border: #cccccc;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --primary: #0288d1;
+            --primary-hover: #0277bd;
+        }
+
+        body.dark-mode {
+            --bg-body: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-input: #2d2d2d;
+            --bg-header: #181818;
+            --bg-message: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-sec: #888888;
+            --border: #333333;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --primary: #4fc3f7;
+            /* Keep primary same or adjust if needed */
+            --primary-hover: #0277bd;
+        }
+
         * {
             box-sizing: border-box;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg-body);
+            color: var(--text-main);
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
             width: 100vw;
             overflow: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
         /* Login Screen */
@@ -29,7 +60,7 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            background: #0f0f0f;
+            background: var(--bg-body);
             z-index: 200;
             position: absolute;
             width: 100%;
@@ -38,11 +69,11 @@
         }
 
         #login-box {
-            background: #1e1e1e;
+            background: var(--bg-panel);
             padding: 40px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 6px var(--shadow);
             width: 80%;
             max-width: 320px;
         }
@@ -50,7 +81,7 @@
         #login-title {
             font-size: 24px;
             margin-bottom: 20px;
-            color: #4fc3f7;
+            color: var(--primary);
         }
 
         .input-group {
@@ -61,9 +92,9 @@
         input {
             width: 100%;
             padding: 12px;
-            background: #2d2d2d;
-            border: 1px solid #444;
-            color: white;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
             border-radius: 4px;
             font-size: 16px;
         }
@@ -71,7 +102,7 @@
         button.btn-primary {
             width: 100%;
             padding: 12px;
-            background: #0288d1;
+            background: var(--primary);
             border: none;
             color: white;
             font-size: 16px;
@@ -82,11 +113,12 @@
         }
 
         button.btn-primary:hover {
-            background: #0277bd;
+            background: var(--primary-hover);
         }
 
         button.btn-secondary {
             background: #444;
+            /* Keep specific buttons dark/custom? Or use var */
             margin-top: 10px;
         }
 
@@ -108,9 +140,9 @@
         /* Main UI */
         #header-bar {
             display: none;
-            background: #181818;
+            background: var(--bg-header);
             padding: 10px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border);
             justify-content: space-between;
             align-items: center;
             height: 50px;
@@ -119,16 +151,22 @@
 
         #header-title {
             font-weight: bold;
-            color: #4fc3f7;
+            color: var(--primary);
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-sec);
+            font-size: 16px;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 4px;
         }
 
         #menu-btn {
-            background: transparent;
-            border: 1px solid #333;
-            color: #ccc;
             font-size: 20px;
-            padding: 5px 10px;
-            cursor: pointer;
         }
 
         #logout-btn {
@@ -167,14 +205,14 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            background: #121212;
+            background: var(--bg-body);
             scroll-behavior: smooth;
         }
 
         #sidebar {
             width: 220px;
-            background: #181818;
-            border-left: 1px solid #333;
+            background: var(--bg-header);
+            border-left: 1px solid var(--border);
             padding: 10px;
             overflow-y: auto;
             display: flex;
@@ -184,7 +222,7 @@
 
         .sidebar-header {
             font-weight: bold;
-            color: #888;
+            color: var(--text-sec);
             margin-bottom: 10px;
             font-size: 14px;
             text-transform: uppercase;
@@ -194,7 +232,7 @@
         .user-item {
             padding: 6px 0;
             font-size: 14px;
-            border-bottom: 1px solid #222;
+            border-bottom: 1px solid var(--border);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -239,13 +277,14 @@
         }
 
         .message {
-            background: #1e1e1e;
+            background: var(--bg-message);
             padding: 8px 12px;
             border-radius: 4px;
             word-wrap: break-word;
             overflow-wrap: break-word;
             word-break: break-word;
             max-width: 100%;
+            box-shadow: 0 1px 2px var(--shadow);
         }
 
         .message .user {
@@ -254,16 +293,16 @@
         }
 
         .message .text {
-            color: #ffffff;
+            color: var(--text-main);
             line-height: 1.4;
         }
 
         #input-area {
             padding: 15px;
-            background: #1e1e1e;
+            background: var(--bg-panel);
             display: flex;
             gap: 10px;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border);
             align-items: center;
             flex-shrink: 0;
             width: 100%;
@@ -282,7 +321,7 @@
         <div id="login-box">
             <div id="login-title">Simple WebChat</div>
 
-            <div id="auth-loading" style="color: #888;">Connecting...</div>
+            <div id="auth-loading" style="color: var(--text-sec);">Connecting...</div>
             <div id="reconnect-msg" style="color: #ff5252; display:none; margin-bottom:10px; font-size:14px;">
                 Reconnecting...</div>
 
@@ -310,7 +349,7 @@
 
                 <!-- Initial State: Get Code -->
                 <div id="linked-step-1">
-                    <div style="margin-bottom: 10px; font-size: 14px; color: #ccc;">
+                    <div style="margin-bottom: 10px; font-size: 14px; color: var(--text-sec);">
                         Enter your Minecraft username and click "Get Code" to receive a login code in-game.
                     </div>
                     <div class="input-group">
@@ -319,9 +358,9 @@
                     <button class="btn-primary btn-warning" onclick="requestOtp()">Get Code</button>
 
                     <div id="resume-session-container"
-                        style="display:none; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
-                        <div style="margin-bottom:10px; color:#888;">Session found for: <b id="resume-username"
-                                style="color:white;"></b></div>
+                        style="display:none; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <div style="margin-bottom:10px; color:var(--text-sec);">Session found for: <b
+                                id="resume-username" style="color:var(--text-main);"></b></div>
                         <button class="btn-primary btn-success" onclick="resumeSession()">Enter Chat</button>
                         <button class="btn-primary btn-secondary" onclick="logoutLinked()">Sign Out</button>
                     </div>
@@ -329,7 +368,7 @@
 
                 <!-- Step 2: Verify Code -->
                 <div id="linked-step-2" style="display:none;">
-                    <div style="margin-bottom: 10px; font-size: 14px; color: #ccc;">
+                    <div style="margin-bottom: 10px; font-size: 14px; color: var(--text-sec);">
                         Code sent! Check your in-game chat.
                     </div>
                     <div class="input-group">
@@ -349,8 +388,9 @@
     <div id="header-bar">
         <div id="header-title">Web Chat</div>
         <div style="display:flex; align-items:center;">
+            <button id="theme-btn" class="icon-btn" onclick="toggleTheme()">🌙/☀️</button>
             <button id="logout-btn" onclick="logout()">Logout</button>
-            <button id="menu-btn" onclick="toggleSidebar()" style="margin-left:10px;">☰</button>
+            <button id="menu-btn" class="icon-btn" onclick="toggleSidebar()" style="margin-left:10px;">☰</button>
         </div>
     </div>
 
@@ -366,9 +406,9 @@
         </div>
         <div id="sidebar">
             <div
-                style="padding-bottom:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:bold; font-size:12px; color:#666;">LOGGED IN AS</span>
-                <span id="current-user-display" style="font-weight:bold; color:white;"></span>
+                style="padding-bottom:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; font-size:12px; color:var(--text-sec);">LOGGED IN AS</span>
+                <span id="current-user-display" style="font-weight:bold; color:var(--text-main);"></span>
                 <span id="logout-sidebar"
                     style="cursor:pointer; color:#c62828; font-size:10px; text-decoration:underline;"
                     onclick="logout()">LOGOUT</span>
@@ -399,7 +439,19 @@
         let isReconnecting = false;
         let reconnectDelay = 2000;
 
+        // Theme Loading
+        const savedTheme = localStorage.getItem('swc_theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
         attemptConnect();
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('swc_theme', isDark ? 'dark' : 'light');
+        }
 
         function attemptConnect() {
             if (isReconnecting && currentAuthMode !== null) {
@@ -522,9 +574,15 @@
             views.main.style.display = 'flex';
             document.getElementById('current-user-display').innerText = myUsername;
 
-            if (window.innerWidth <= 768) {
-                document.getElementById('header-bar').style.display = 'flex';
-            }
+            // Only toggle header if we need it (on desktop it is hidden in CSS? wait)
+            // CSS says #header-bar display: none, but media-query max-width 768 display: flex
+            // On desktop we might want the logout button visible? 
+            // The original logic had it hidden on desktop?
+            // Let's force it visible always or just use the CSS rules.
+            // Actually, logout is in sidebar too.
+            // But theme button is in header bar. We need header bar visible on desktop too now?
+            document.getElementById('header-bar').style.display = 'flex';
+
             addConnectionDivider("Connected to Server");
 
             // Scroll to bottom
@@ -669,7 +727,30 @@
             const div = document.createElement('div');
             div.className = 'message';
             const color = getUsernameColor(user);
-            div.innerHTML = `<span class="user" style="color: ${color}">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
+
+            let formattedText = escapeHtml(text);
+
+            // System message formatting
+            if (user === "System") {
+                // Formatting for "X joined the chat." or "X left the server."
+                // Regex to find potential usernames and color them? 
+                // Simple approach: Split by space, if a word matches a known user, color it?
+                // Or just assume the first word is a user if it ends with "joined" etc?
+                // The typical format is "Ven joined the chat."
+                // Let's try to match "[Name]" or just the name.
+
+                // Let's use the known user lists (players + webUsers) from memory? 
+                // We don't have them easily accessible as a flat list here without iterating DOM or saving state.
+                // Let's just try to match the pattern.
+                const match = text.match(/^(.+?)\s+(joined|left)/);
+                if (match) {
+                    const name = match[1];
+                    const nameColor = getUsernameColor(name);
+                    formattedText = formattedText.replace(name, `<span style="color:${nameColor}; font-weight:bold;">${escapeHtml(name)}</span>`);
+                }
+            }
+
+            div.innerHTML = `<span class="user" style="color: ${color}">${escapeHtml(user)}</span><span class="text">${formattedText}</span>`;
             chatContainer.appendChild(div);
             if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)
                 chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -682,11 +763,14 @@
 
         function addConnectionDivider(text) {
             const div = document.createElement('div');
-            div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: #555; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
-            const line = "flex: 1; height: 1px; background: #333; margin: 0 10px;";
+            div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: var(--text-sec); font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
+            const line = "flex: 1; height: 1px; background: var(--border); margin: 0 10px;";
             div.innerHTML = `<div style="${line}"></div><span>${escapeHtml(text)}</span><div style="${line}"></div>`;
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            // Scroll to bottom helper
+            if (chatContainer.scrollHeight - chatContainer.scrollTop < 1500) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
         }
 
         const COLORS = ["#e60000", "#0000e6", "#00b300", "#e6e600", "#e68a00", "#bf00bf", "#00bfbf", "#e66699", "#99e699", "#804d00"];
