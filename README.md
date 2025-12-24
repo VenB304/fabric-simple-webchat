@@ -7,7 +7,7 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
 *   **Real-time Chat**: Bidirectional communication between the web interface and Minecraft chat.
 *   **Web Interface**:
     *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer for mobile devices.
-    *   **Dark Mode**: Sleek, modern dark UI.
+    *   **Theming**: **Light Mode** (default) and **Dark Mode**, with a persistent toggle.
     *   **User Lists**: View currently online players (in-game) and other web users.
     *   **Login System**:
         *   **Simple Auth**: Shared password protection.
@@ -15,11 +15,10 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
     *   **History**: See the recent chat history (last 50 messages) immediately upon joining.
     *   **Connection Status**: Visual indicators for when you connect/disconnect.
 *   **Moderation**:
-    *   **Rate Limiting**: Built-in IP-based rate limiting to prevent spam.
+    *   **Rate Limiting**: IP-based rate limiting for messages and OTP requests.
     *   **Banning**: `/ban-ip` style JSON-based ban list support.
-    *   **Sanitization**: automatically strips Minecraft color codes (`§`) from web messages.
-    *   **Username Deduplication**: Automatically handles duplicate usernames to prevent confusion.
-    *   **Profanity Filter**: Optional basic filter for profanity.
+    *   **Sanitization**: Automatically strips Minecraft color codes (`§`) from web messages.
+    *   **Profanity Filter**: Configurable list of banned words.
 *   **Security**:
     *   **Flexible Auth Modes**: Choose between No Auth, Simple Password, or Account Linking.
     *   **SSL/TLS**: Native support for encrypted connections (WSS/HTTPS) if a keystore is provided.
@@ -27,6 +26,7 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
 *   **Technical**:
     *   **Performance**: Uses **Javalin** for a lightweight, high-performance web server.
     *   **Thread Safety**: Robust thread bridging between the Web thread and Minecraft Server thread.
+    *   **Resource Management**: Automatic cleanup of expired sessions and stale data.
 
 ## Installation
 
@@ -45,13 +45,19 @@ http://<your-server-ip>:25585/
 
 ### Login Methods
 
-1.  **Guest/Simple**: Enter a username (and password if enabled) to join as a web user.
-2.  **Account Linking**:
-    *   Click "Login to Minecraft Account".
+1.  **Guest (NONE Mode)**: Enter a username to join.
+2.  **Simple (SIMPLE Mode)**: Enter a username and the server-configured password.
+3.  **Account Linking (LINKED Mode)**:
     *   Enter your Minecraft username.
     *   Click "Get Code".
-    *   You will receive a code in-game (must be online).
+    *   You will receive a 6-digit code in-game (you must be online).
     *   Enter the code in the web interface to verify and link your account.
+
+### Interface
+
+-   **Theme Toggle**: Click the 🌙/☀️ icon in the top right (or on the login screen) to switch between Dark and Light mode.
+-   **Sidebar**: On mobile, use the hamburger menu (☰) to view the player list.
+-   **Logout**: Click "Logout" in the header to end your session.
 
 ## Configuration Guide
 
@@ -64,7 +70,9 @@ Generated on first launch.
   "webPort": 25585,
   "maxMessageLength": 256,
   "rateLimitMessagesPerMinute": 20,
+  "otpRateLimitSeconds": 30,
   "enableProfanityFilter": false,
+  "profanityList": [ "badword1", "badword2" ],
   "webPassword": "",
   "authMode": "NONE",
   "enableSSL": false,
@@ -80,10 +88,12 @@ Generated on first launch.
 | :--- | :--- | :--- | :--- |
 | `webPort` | `int` | `25585` | The port the web server listens on. |
 | `maxMessageLength` | `int` | `256` | Maximum characters allowed in a single message. |
-| `rateLimitMessagesPerMinute` | `int` | `20` | Max messages a user can send per minute before being rate-limited. |
+| `rateLimitMessagesPerMinute` | `int` | `20` | Max messages a user can send per minute. |
+| `otpRateLimitSeconds` | `int` | `30` |  Cooldown for requesting OTP codes (prevent spam). |
 | `authMode` | `enum` | `NONE` | Authentication mode. Options: `NONE`, `SIMPLE`, `LINKED`. |
 | `webPassword` | `string` | `""` | Password required if `authMode` is `SIMPLE`. |
-| `enableProfanityFilter` | `boolean` | `false` | Enables a basic swear word filter. |
+| `enableProfanityFilter` | `boolean` | `false` | Enables the profanity filter. |
+| `profanityList` | `list` | `[]` | List of words to filter if enabled. |
 | `enableSSL` | `boolean` | `false` | Enables HTTPS/WSS. Requires keystore. |
 | `sslKeyStorePath` | `string` | `""` | Path to the JKS/PKCS12 keystore file for SSL. |
 | `sslKeyStorePassword` | `string` | `""` | Password for the keystore. |
@@ -104,8 +114,7 @@ Stores a JSON array of banned IP addresses.
 ## ⚠️ Security & Limitations
 
 1.  **Open Port**: This mod opens a web server on your machine (default port 25585). **Ensure you configure your firewall correctly.**
-2.  **Moderation**: While basic tools (bans, filters) are included, this mod **does not** integrate with advanced plugins like LiteBans or Discord.
-3.  **HTTPS**: By default, traffic is unencrypted (HTTP). For production use, enable SSL with a keystore or use a reverse proxy (Nginx/Cloudflare).
+2.  **HTTPS**: By default, traffic is unencrypted (HTTP). For production use, enable SSL with a keystore or use a reverse proxy (Nginx/Cloudflare).
 
 ## Building from Source
 
