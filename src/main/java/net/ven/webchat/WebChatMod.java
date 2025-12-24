@@ -87,5 +87,20 @@ public class WebChatMod implements ModInitializer {
                                         return 1;
                                     })));
                 });
+
+        // 6. Register Periodic Cleanup (Every Hour)
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
+                .register(new net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.EndTick() {
+                    private int ticks = 0;
+
+                    @Override
+                    public void onEndTick(net.minecraft.server.MinecraftServer server) {
+                        ticks++;
+                        if (ticks >= 72000) { // 20 ticks * 60 sec * 60 min = 72000
+                            ticks = 0;
+                            net.ven.webchat.auth.AuthManager.cleanup();
+                        }
+                    }
+                });
     }
 }

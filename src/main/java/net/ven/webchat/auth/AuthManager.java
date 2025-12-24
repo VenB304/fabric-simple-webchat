@@ -117,6 +117,29 @@ public class AuthManager {
         });
     }
 
+    public static void cleanup() {
+        long now = System.currentTimeMillis();
+        boolean changed = false;
+
+        // Cleanup Sessions
+        // RemoveIf returns true if any elements were removed
+        changed = sessions.entrySet().removeIf(entry -> now > entry.getValue().expiry);
+
+        // Cleanup OTP Rate Limits
+        long limit = net.ven.webchat.config.ModConfig.getInstance().otpRateLimitSeconds * 1000L;
+        otpRateLimit.entrySet().removeIf(entry -> now - entry.getValue() > limit);
+
+        // Cleanup OTP Codes (Optional: remove codes older than 5 mins?
+        // Currently OTPs don't have explicit timestamps in the map, just UUID->Code.
+        // We rely on overwrite. But good to clear eventually or add timestamp wrapper.
+        // For now, we leave OTPs as they are small strings. Session file is the biggest
+        // concern.)
+
+        if (changed) {
+            saveSessions();
+        }
+    }
+
     public static class Session {
         public UUID uuid;
         public String username;
