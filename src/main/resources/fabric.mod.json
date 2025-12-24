@@ -1,15 +1,15 @@
 {
 	"schemaVersion": 1,
-	"id": "web-chat-mod",
+	"id": "fabric-simple-webchat",
 	"version": "${version}",
-	"name": "Web Chat Mod",
-	"description": "A server-side mod that embeds a web chat interface",
+	"name": "Fabric Simple WebChat",
+	"description": "A lightweight, server-side Fabric mod that adds a mobile-friendly web chat interface.",
 	"authors": [
 		"Me"
 	],
 	"contact": {
 		"homepage": "https://example.com/",
-		"sources": "https://github.com/example/web-chat-mod"
+		"sources": "https://github.com/example/fabric-simple-webchat"
 	},
 	"license": "MIT",
 	"icon": "assets/web-chat-mod/icon.png",
@@ -19,8 +19,7 @@
 			"com.example.webchat.WebChatMod"
 		]
 	},
-	"mixins": [
-	],
+	"mixins": [],
 	"depends": {
 		"fabricloader": ">=0.16.5",
 		"minecraft": "~1.21.1",

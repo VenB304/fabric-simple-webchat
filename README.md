@@ -1,6 +1,6 @@
-# Minecraft Web Chat Mod (Fabric 1.21+)
+# Fabric Simple WebChat
 
-A server-side Fabric mod that embeds a lightweight web server, allowing users to chat with players in-game directly from their web browser.
+A lightweight, server-side Fabric mod that adds a mobile-friendly web chat interface to your Minecraft server.
 
 ## Features
 
