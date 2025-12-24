@@ -1,0 +1,78 @@
+plugins {
+	id 'fabric-loom' version '1.8-SNAPSHOT'
+	id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'java'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    implementation.extendsFrom shadowBundle
+}
+
+dependencies {
+    // Javalin & Dependencies (Shadowed)
+    shadowBundle("io.javalin:javalin:6.1.3")
+    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.17.0") 
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier.set("dev-shadow") // prevent overwriting the main jar immediately or conflict
+    
+    // Relocate to avoid conflicts
+    relocate 'io.javalin', 'com.example.webchat.shadow.javalin'
+    relocate 'com.fasterxml.jackson', 'com.example.webchat.shadow.jackson'
+    relocate 'org.eclipse.jetty', 'com.example.webchat.shadow.jetty'
+    // Do NOT relocate SLF4J - use the game's logger integration
+    relocate 'kotlin', 'com.example.webchat.shadow.kotlin'
+}
+
+remapJar {
+    dependsOn shadowJar
+    inputFile.set(shadowJar.archiveFile)
+    archiveClassifier.set("")
+}

@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "web-chat-mod",
+	"version": "${version}",
+	"name": "Web Chat Mod",
+	"description": "A server-side mod that embeds a web chat interface",
+	"authors": [
+		"Me"
+	],
+	"contact": {
+		"homepage": "https://example.com/",
+		"sources": "https://github.com/example/web-chat-mod"
+	},
+	"license": "MIT",
+	"icon": "assets/web-chat-mod/icon.png",
+	"environment": "server",
+	"entrypoints": {
+		"main": [
+			"com.example.webchat.WebChatMod"
+		]
+	},
+	"mixins": [
+	],
+	"depends": {
+		"fabricloader": ">=0.16.5",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
