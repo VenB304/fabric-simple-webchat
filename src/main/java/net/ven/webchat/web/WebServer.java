@@ -84,11 +84,10 @@ public class WebServer {
 
                     if (authResult == AuthHandler.AuthResult.SUCCESS) {
                         ctx.attribute("authenticated", true);
-                    } else if (authResult == AuthHandler.AuthResult.GUEST) {
-                        ctx.attribute("authenticated", true);
-                    } else if (authResult == AuthHandler.AuthResult.HANDSHAKE_ONLY) {
+                    } else {
+                        // HANDSHAKE_ONLY, GUEST (Mapped to handshake now), or others
                         ctx.attribute("authenticated", false);
-                        // Do NOT close, allow OTP handshake
+                        // Do NOT close, allow handshake/login UI
                     }
 
                     // Username from Query Param

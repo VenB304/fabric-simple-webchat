@@ -18,15 +18,26 @@ public class AuthHandler {
 
         switch (mode) {
             case NONE:
-                return AuthResult.GUEST;
+                // If a username is provided, we treat it as SUCCESS (Logged in).
+                // If no username, we return HANDSHAKE_ONLY so the client knows it needs to
+                // provide one.
+                String user = ctx.queryParam("username");
+                if (user != null && !user.trim().isEmpty()) {
+                    return AuthResult.SUCCESS;
+                }
+                return AuthResult.HANDSHAKE_ONLY;
 
             case SIMPLE:
                 String pass = ctx.queryParam("password");
                 String configPass = ModConfig.getInstance().webPassword;
+
                 if (pass != null && pass.equals(configPass)) {
                     return AuthResult.SUCCESS;
                 }
-                return AuthResult.FAILED;
+                // If password missing or wrong, allow connection but unauthenticated
+                // This prevents the infinite reconnect loop and allows the client to receive
+                // the 'status' message
+                return AuthResult.HANDSHAKE_ONLY;
 
             case LINKED:
                 String token = ctx.queryParam("token");

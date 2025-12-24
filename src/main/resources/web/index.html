@@ -421,9 +421,8 @@
                 url += `?username=${encodeURIComponent(savedUser)}`;
                 if (savedPass) url += `&password=${encodeURIComponent(savedPass)}`;
                 if (savedToken) url += `&token=${encodeURIComponent(savedToken)}`;
-            } else {
-                url += `?username=GuestProbe`;
             }
+            // Do NOT append GuestProbe default. Let server handle empty username as unauthenticated/handshake.
 
             if (ws) {
                 try { ws.close(); } catch (e) { }
