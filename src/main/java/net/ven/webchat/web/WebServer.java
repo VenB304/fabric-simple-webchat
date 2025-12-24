@@ -219,7 +219,13 @@ public class WebServer {
             });
 
             // Start
-            app.start(ModConfig.getInstance().webPort);
+            if (ModConfig.getInstance().enableSSL) {
+                // Connector already added manually in config
+                app.start();
+            } else {
+                app.start(ModConfig.getInstance().webPort);
+            }
+
             net.ven.webchat.WebChatMod.LOGGER
                     .info("Web Chat Server started on port " + ModConfig.getInstance().webPort);
         });
@@ -243,48 +249,64 @@ public class WebServer {
             return;
 
         server.execute(() -> {
-            if ("request_otp".equals(type)) {
-                String ip = ctx.attribute("ip");
-                if (ip != null && !AuthManager.canRequestOtp(ip)) {
-                    ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait.\"}");
-                    return;
-                }
-
-                String username = json.has("username") ? json.get("username").getAsString() : null;
-                if (username == null || username.isEmpty())
-                    return;
-
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
-
-                if (player != null) {
-                    String code = AuthManager.generateOTP(player.getUuid());
-                    player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code),
-                            false);
-                    ctx.send("{\"type\": \"otp_sent\"}");
-                } else {
-                    ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
-                }
-            } else if ("verify_otp".equals(type)) {
-                String username = json.has("username") ? json.get("username").getAsString() : null;
-                String code = json.has("code") ? json.get("code").getAsString() : null;
-
-                if (username == null || code == null)
-                    return;
-
-                ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
-                if (player != null) {
-                    if (AuthManager.verifyOTP(player.getUuid(), code)) {
-                        String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
-                        ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
-                                + player.getName().getString() + "\"}");
-                    } else {
-                        ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
-                    }
-                } else {
-                    ctx.send("{\"type\": \"error\", \"message\": \"Player not online to verify\"}");
-                }
+            switch (type) {
+                case "request_otp":
+                    handleOtpRequest(ctx, json, server);
+                    break;
+                case "verify_otp":
+                    handleOtpVerify(ctx, json, server);
+                    break;
+                default:
+                    // Unknown command
+                    break;
             }
         });
+    }
+
+    private static void handleOtpRequest(io.javalin.websocket.WsContext ctx, JsonObject json,
+            net.minecraft.server.MinecraftServer server) {
+        String ip = ctx.attribute("ip");
+        if (ip != null && !AuthManager.canRequestOtp(ip)) {
+            ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait.\"}");
+            return;
+        }
+
+        String username = json.has("username") ? json.get("username").getAsString() : null;
+        if (username == null || username.isEmpty())
+            return;
+
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
+
+        if (player != null) {
+            String code = AuthManager.generateOTP(player.getUuid());
+            player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code),
+                    false);
+            ctx.send("{\"type\": \"otp_sent\"}");
+        } else {
+            ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
+        }
+    }
+
+    private static void handleOtpVerify(io.javalin.websocket.WsContext ctx, JsonObject json,
+            net.minecraft.server.MinecraftServer server) {
+        String username = json.has("username") ? json.get("username").getAsString() : null;
+        String code = json.has("code") ? json.get("code").getAsString() : null;
+
+        if (username == null || code == null)
+            return;
+
+        ServerPlayerEntity player = server.getPlayerManager().getPlayer(username);
+        if (player != null) {
+            if (AuthManager.verifyOTP(player.getUuid(), code)) {
+                String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
+                ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
+                        + player.getName().getString() + "\"}");
+            } else {
+                ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
+            }
+        } else {
+            ctx.send("{\"type\": \"error\", \"message\": \"Player not online to verify\"}");
+        }
     }
 
     private static boolean containsProfanity(String message) {

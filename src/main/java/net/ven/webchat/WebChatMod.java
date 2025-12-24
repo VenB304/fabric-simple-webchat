@@ -50,9 +50,9 @@ public class WebChatMod implements ModInitializer {
 
             // Delay list update slightly to ensure player list is 100% updated in all
             // contexts
-            // Although ServerPlayConnectionEvents.JOIN is post-join, let's be safe.
+            // although ServerPlayConnectionEvents.JOIN is post-join, let's be safe.
             // We can just execute it.
-            server.execute(() -> ChatBridge.broadcastUserList());
+            ChatBridge.broadcastUserList();
         });
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
@@ -61,7 +61,7 @@ public class WebChatMod implements ModInitializer {
             // Notify Web Users
             ChatBridge.broadcastToWeb("System", playerName + " left the server.");
 
-            server.execute(() -> ChatBridge.broadcastUserList());
+            ChatBridge.broadcastUserList();
         });
         // 5. Register Generic Commands
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT

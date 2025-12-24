@@ -15,6 +15,8 @@ public class ChatBridge {
     public static final Set<WsContext> activeSessions = ConcurrentHashMap.newKeySet();
     public static final Map<WsContext, String> sessionUsernames = new ConcurrentHashMap<>();
 
+    private static final Gson GSON = new Gson();
+
     public static void setServer(MinecraftServer mcServer) {
         server = mcServer;
     }
@@ -56,7 +58,7 @@ public class ChatBridge {
         payload.put("user", sender);
         payload.put("message", message);
 
-        String jsonPayload = new Gson().toJson(payload);
+        String jsonPayload = GSON.toJson(payload);
 
         for (WsContext ctx : activeSessions) {
             if (ctx.session.isOpen()) {
@@ -83,7 +85,7 @@ public class ChatBridge {
             payload.put("players", players);
             payload.put("webUsers", webUsers);
 
-            String json = new Gson().toJson(payload);
+            String json = GSON.toJson(payload);
 
             for (WsContext ctx : activeSessions) {
                 if (ctx.session.isOpen())
@@ -93,13 +95,12 @@ public class ChatBridge {
     }
 
     public static void sendHistoryTo(WsContext ctx) {
-        Gson gson = new Gson();
         for (HistoricMessage msg : history) {
             Map<String, String> payload = new java.util.HashMap<>();
             payload.put("type", "message");
             payload.put("user", msg.user);
             payload.put("message", msg.message);
-            ctx.send(gson.toJson(payload));
+            ctx.send(GSON.toJson(payload));
         }
     }
 
