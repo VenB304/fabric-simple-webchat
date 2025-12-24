@@ -28,7 +28,6 @@ public class ModConfig {
     public AuthMode authMode = AuthMode.NONE;
 
     // Security Features
-    public boolean enableSimpleAuth = false;
     public boolean enableSSL = false;
     public String sslKeyStorePath = "";
     public String sslKeyStorePassword = "";

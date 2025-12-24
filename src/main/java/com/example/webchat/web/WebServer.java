@@ -1,6 +1,7 @@
 package com.example.webchat.web;
 
 import com.example.webchat.bridge.ChatBridge;
+import com.example.webchat.auth.AuthHandler;
 import com.example.webchat.auth.AuthManager;
 import com.example.webchat.config.ModConfig;
 import com.google.gson.Gson;
@@ -73,28 +74,21 @@ public class WebServer {
                     }
 
                     // Authentication
-                    if (ModConfig.getInstance().authMode == ModConfig.AuthMode.SIMPLE
-                            || ModConfig.getInstance().enableSimpleAuth) {
-                        String pass = ctx.queryParam("password");
-                        if (pass == null || !pass.equals(ModConfig.getInstance().webPassword)) {
-                            ctx.closeSession(4003, "Forbidden: Invalid Password");
-                            return;
-                        }
-                    } else if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED) {
-                        String token = ctx.queryParam("token");
-                        AuthManager.Session session = AuthManager.verifySession(token);
-                        if (session != null) {
-                            // Valid session
-                            ctx.attribute("uuid", session.uuid);
-                            ctx.attribute("username", session.username);
-                            ctx.attribute("authenticated", true);
-                        } else {
-                            ctx.attribute("authenticated", false);
-                            // Do NOT close, allow OTP handshake
-                        }
-                    } else {
-                        ctx.attribute("authenticated", true); // Simple/None are implicitly "authenticated" for this
-                                                              // flow check
+                    // Authentication
+                    AuthHandler.AuthResult authResult = AuthHandler.handleConnection(ctx);
+
+                    if (authResult == AuthHandler.AuthResult.FAILED) {
+                        ctx.closeSession(4003, "Authentication Failed");
+                        return;
+                    }
+
+                    if (authResult == AuthHandler.AuthResult.SUCCESS) {
+                        ctx.attribute("authenticated", true);
+                    } else if (authResult == AuthHandler.AuthResult.GUEST) {
+                        ctx.attribute("authenticated", true);
+                    } else if (authResult == AuthHandler.AuthResult.HANDSHAKE_ONLY) {
+                        ctx.attribute("authenticated", false);
+                        // Do NOT close, allow OTP handshake
                     }
 
                     // Username from Query Param
@@ -164,8 +158,8 @@ public class WebServer {
                     String ip = ctx.attribute("ip");
 
                     // Enforce Auth for Chat
-                    if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED
-                            && !Boolean.TRUE.equals(ctx.attribute("authenticated"))) {
+                    // Enforce Auth for Chat
+                    if (!AuthHandler.isAuthorized(ctx)) {
                         // Send error?
                         return;
                     }
