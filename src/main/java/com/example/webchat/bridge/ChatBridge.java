@@ -33,8 +33,9 @@ public class ChatBridge {
             // Broadcast to all players
             server.getPlayerManager().broadcast(chatText, false);
 
-            // Log to server console
-            server.sendMessage(chatText);
+            // Log to server console - REMOVED to prevent double logging (broadcast likely
+            // logs, or is handled elsewhere)
+            // server.sendMessage(chatText);
 
             // Also echo back to web users
             broadcastToWeb(username, message);

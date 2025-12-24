@@ -4,7 +4,6 @@ import com.example.webchat.bridge.ChatBridge;
 import com.example.webchat.config.ModConfig;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
-import java.time.Duration;
 
 public class WebServer {
     private static Javalin app;
@@ -18,11 +17,27 @@ public class WebServer {
                 // Serve static files from 'src/main/resources/web' (classpath)
                 config.staticFiles.add("/web", Location.CLASSPATH);
 
-                // Trust Cloudflare/Proxy headers
-                // Note: Javalin 6+ handling might differ, but generally this is
-                // config.jetty.defaultHost...
-                // Or specific IP handling. For simplicity in Javalin 6:
-                // config.jetty.modifyWebSocketServletFactory(...)
+                // SSL Support
+                if (ModConfig.getInstance().enableSSL) {
+                    // Note: Basic SSL setup. For production, a proper keystore is needed.
+                    // This assumes the user provides a valid keystore path and password.
+                    if (!ModConfig.getInstance().sslKeyStorePath.isEmpty()
+                            && !ModConfig.getInstance().sslKeyStorePassword.isEmpty()) {
+                        config.jetty.addConnector((server, httpConfiguration) -> {
+                            org.eclipse.jetty.util.ssl.SslContextFactory.Server sslContextFactory = new org.eclipse.jetty.util.ssl.SslContextFactory.Server();
+                            sslContextFactory.setKeyStorePath(ModConfig.getInstance().sslKeyStorePath);
+                            sslContextFactory.setKeyStorePassword(ModConfig.getInstance().sslKeyStorePassword);
+
+                            org.eclipse.jetty.server.ServerConnector sslConnector = new org.eclipse.jetty.server.ServerConnector(
+                                    server,
+                                    sslContextFactory);
+                            sslConnector.setPort(ModConfig.getInstance().webPort);
+                            return sslConnector;
+                        });
+                    } else {
+                        com.example.webchat.WebChatMod.LOGGER.warn("SSL enabled but keystore path/password missing.");
+                    }
+                }
             });
 
             // WebSocket Endpoint
@@ -30,7 +45,6 @@ public class WebServer {
                 ws.onConnect(ctx -> {
                     ctx.session.setIdleTimeout(java.time.Duration.ofMinutes(5));
 
-                    String ip = ctx.attribute("ip"); // Actually we need to re-fetch if we didn't store it yet properly.
                     // Let's re-parse for safety as attribute logic was inline.
                     String forwarded = ctx.header("X-Forwarded-For");
                     String realIp;
@@ -45,12 +59,21 @@ public class WebServer {
                     } else {
                         realIp = "0.0.0.0";
                     }
-                    if (forwarded != null && !forwarded.isEmpty())
+                    if (ModConfig.getInstance().trustProxy && forwarded != null && !forwarded.isEmpty())
                         realIp = forwarded.split(",")[0].trim();
 
                     if (ModerationManager.isBanned(realIp)) {
                         ctx.closeSession(1008, "Banned");
                         return;
+                    }
+
+                    // Authentication
+                    if (ModConfig.getInstance().enableSimpleAuth) {
+                        String pass = ctx.queryParam("password");
+                        if (pass == null || !pass.equals(ModConfig.getInstance().webPassword)) {
+                            ctx.closeSession(4003, "Forbidden: Invalid Password");
+                            return;
+                        }
                     }
 
                     // Username from Query Param
@@ -107,6 +130,17 @@ public class WebServer {
                     // Sanitize color codes
                     message = message.replaceAll("§.", "");
 
+                    // Profanity Filter (Basic)
+                    if (ModConfig.getInstance().enableProfanityFilter) {
+                        // Very simple placeholder filter.
+                        if (containsProfanity(message)) {
+                            // Option 1: Block silent or loud
+                            ctx.send(
+                                    "{\"type\":\"message\", \"user\": \"System\", \"message\": \"Message blocked: contains profanity.\"}");
+                            return;
+                        }
+                    }
+
                     if (!message.trim().isEmpty()) {
                         ChatBridge.sendToGame(username, message);
                     }
@@ -137,5 +171,18 @@ public class WebServer {
             app.stop();
             app = null;
         }
+
+    }
+
+    private static boolean containsProfanity(String message) {
+        String lower = message.toLowerCase();
+        // A few basic words. Users should really use a proper moderation bot/plugin if
+        // they need advanced stuff.
+        String[] badWords = { "badword", "naughty" };
+        for (String word : badWords) {
+            if (lower.contains(word))
+                return true;
+        }
+        return false;
     }
 }

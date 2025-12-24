@@ -21,6 +21,13 @@ public class ModConfig {
     public boolean enableProfanityFilter = false;
     public String webPassword = ""; // Optional simple password for admin actions (not implemented yet)
 
+    // Security Features
+    public boolean enableSimpleAuth = false;
+    public boolean enableSSL = false;
+    public String sslKeyStorePath = "";
+    public String sslKeyStorePassword = "";
+    public boolean trustProxy = true;
+
     public static ModConfig getInstance() {
         if (instance == null) {
             load();

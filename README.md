@@ -17,8 +17,12 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
     *   **Banning**: `/ban-ip` style JSON-based ban list support.
     *   **Sanitization**: automatically strips Minecraft color codes (`§`) from web messages.
     *   **Username Deduplication**: Automatically handles duplicate usernames to prevent confusion.
+    *   **Profanity Filter**: Optional basic filter for profanity.
+*   **Security**:
+    *   **Authentication**: Optional simple password protection for the web interface.
+    *   **SSL/TLS**: Native support for encrypted connections (WSS/HTTPS) if a keystore is provided.
+    *   **Proxy Support**: Configurable support for `X-Forwarded-For` headers (default: true).
 *   **Technical**:
-    *   **Proxy Support**: Support for `X-Forwarded-For` headers (e.g., Cloudflare Tunnels).
     *   **Performance**: Uses **Javalin** for a lightweight, high-performance web server.
     *   **Thread Safety**: Robust thread bridging between the Web thread and Minecraft Server thread.
 
@@ -41,12 +45,12 @@ http://<your-server-ip>:25585/web/index.html
 
 ## ⚠️ Limitations & Security Disclaimer
 
-This mod was built for a specific use case and might not be suitable for all public servers. Please consider the following before installing:
+This mod was built for a specific use case, but now supports optional security features for public servers.
 
-1.  **No Authentication**: There is **no password or account verification**. Anyone can join the web chat and choose almost any username. This makes it unsuitable for communities where identity verification is critical.
-2.  **Open Port**: This mod opens a web server on your machine (default port 25585). You must ensure this port is properly firewalled or tunneled (e.g., Cloudflare Tunnel) to prevent direct IP leaks or unauthorized access if not intended.
-3.  **Basic Moderation**: While it includes simple IP bans and rate limiting, it **does not** integrate with advanced moderation plugins (like AdvancedBan, LiteBans) or Discord.
-4.  **No TLS/SSL**: The internal server runs over HTTP/WS. For secure production use (HTTPS/WSS), you **must** run this behind a reverse proxy (Nginx, Caddy, Cloudflare) that handles SSL termination.
+1.  **Authentication**: By default, there is **no password**. You can enable `enableSimpleAuth` in the config to require a password.
+2.  **Open Port**: This mod opens a web server on your machine (default port 25585). proper firewalling is recommended.
+3.  **Basic Moderation**: Includes IP bans, rate limiting, and a basic profanity filter. It **does not** integrate with advanced moderation plugins (like AdvancedBan, LiteBans) or Discord.
+4.  **TLS/SSL**: By default, runs over HTTP/WS. You can enable `enableSSL` in the config (requires a keystore) or use a reverse proxy (recommended for production).
 
 ## Configuration
 
@@ -57,7 +61,14 @@ Generated on first launch.
 {
   "webPort": 25585,
   "maxMessageLength": 256,
-  "rateLimitMessagesPerMinute": 20
+  "rateLimitMessagesPerMinute": 20,
+  "enableProfanityFilter": false,
+  "webPassword": "",
+  "enableSimpleAuth": false,
+  "enableSSL": false,
+  "sslKeyStorePath": "",
+  "sslKeyStorePassword": "",
+  "trustProxy": true
 }
 ```
 

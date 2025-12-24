@@ -276,6 +276,7 @@
         <div id="login-box">
             <div id="login-title">Join Server Chat</div>
             <input type="text" id="username-input" placeholder="Enter Username" maxlength="16">
+            <input type="password" id="password-input" placeholder="Password (Optional)" style="width: 100%; box-sizing: border-box; margin-bottom: 20px; font-size: 16px; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px;">
             <button onclick="startChat()"
                 style="width:100%; padding: 12px; background: #0288d1; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer;">Connect</button>
         </div>
@@ -308,6 +309,7 @@
         const loginScreen = document.getElementById('login-screen');
         const mainUi = document.getElementById('main-ui');
         const usernameInput = document.getElementById('username-input');
+        const passwordInput = document.getElementById('password-input');
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message');
         const playerListDiv = document.getElementById('player-list');
@@ -321,6 +323,9 @@
         // Restore username
         if (localStorage.getItem('chat_username')) {
             usernameInput.value = localStorage.getItem('chat_username');
+        }
+        if (localStorage.getItem('chat_password')) {
+            passwordInput.value = localStorage.getItem('chat_password');
         }
 
         const headerBar = document.getElementById('header-bar');
@@ -338,6 +343,7 @@
 
             myUsername = name;
             localStorage.setItem('chat_username', myUsername);
+            localStorage.setItem('chat_password', passwordInput.value);
 
             loginScreen.style.display = 'none';
             mainUi.style.display = 'flex';
@@ -359,7 +365,8 @@
 
         function connect() {
             const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            ws = new WebSocket(`${proto}://${window.location.host}/chat?username=${encodeURIComponent(myUsername)}`);
+            const password = encodeURIComponent(passwordInput.value);
+            ws = new WebSocket(`${proto}://${window.location.host}/chat?username=${encodeURIComponent(myUsername)}&password=${password}`);
 
             ws.onopen = () => {
                 addConnectionDivider("Connected to server");
@@ -449,6 +456,7 @@
 
         messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
         usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startChat(); });
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startChat(); });
     </script>
 </body>
 
