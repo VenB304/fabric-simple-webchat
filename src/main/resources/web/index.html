@@ -275,10 +275,37 @@
     <div id="login-screen">
         <div id="login-box">
             <div id="login-title">Join Server Chat</div>
-            <input type="text" id="username-input" placeholder="Enter Username" maxlength="16">
-            <input type="password" id="password-input" placeholder="Password (Optional)" style="width: 100%; box-sizing: border-box; margin-bottom: 20px; font-size: 16px; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px;">
-            <button onclick="startChat()"
-                style="width:100%; padding: 12px; background: #0288d1; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer;">Connect</button>
+
+            <!-- Standard/OTP Login Flow -->
+            <div id="login-step-1">
+                <input type="text" id="username-input" placeholder="Minecraft Username" maxlength="16">
+                <!-- If Simple Auth is used -->
+                <input type="password" id="password-input" placeholder="Server Password (If Enabled)"
+                    style="display:none; width: 100%; box-sizing: border-box; margin-bottom: 20px; font-size: 16px; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px;">
+
+                <button onclick="startChat()"
+                    style="width:100%; padding: 12px; background: #0288d1; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer;">Connect</button>
+                <div style="margin-top: 10px; text-align: center; font-size: 0.9em; color: #888;">
+                    <a href="#" onclick="showOtpLogin()">Login to Minecraft Account</a>
+                </div>
+            </div>
+
+            <div id="login-step-otp" style="display:none;">
+                <input type="text" id="otp-username" placeholder="Minecraft Username" maxlength="16">
+                <button id="btn-get-code" onclick="requestOtp()"
+                    style="width:100%; padding: 12px; background: #f57f17; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer; margin-bottom: 10px;">Get
+                    Code</button>
+
+                <input type="text" id="otp-code" placeholder="Enter In-Game Code" maxlength="6"
+                    style="display:none; width: 100%; box-sizing: border-box; margin-bottom: 20px; font-size: 16px; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 4px;">
+                <button id="btn-verify-code" onclick="verifyOtp()"
+                    style="display:none; width:100%; padding: 12px; background: #43a047; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer;">Verify
+                    & Login</button>
+
+                <div style="margin-top: 10px; text-align: center; font-size: 0.9em; color: #888;">
+                    <a href="#" onclick="showStandardLogin()">Back</a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -324,8 +351,20 @@
         if (localStorage.getItem('chat_username')) {
             usernameInput.value = localStorage.getItem('chat_username');
         }
+        // Password for Simple Auth
         if (localStorage.getItem('chat_password')) {
-            passwordInput.value = localStorage.getItem('chat_password');
+            const savedPass = localStorage.getItem('chat_password');
+            if (savedPass) {
+                passwordInput.style.display = 'block'; // Show if we had one saved, heuristic
+                passwordInput.value = savedPass;
+            }
+        }
+        // Token for Linked Auth
+        const savedToken = localStorage.getItem('chat_token');
+        if (savedToken) {
+            // Auto-login attempt?
+            // For now, let's just use it if we click connect or auto-connect logic.
+            // Maybe checking if it's there is enough.
         }
 
         const headerBar = document.getElementById('header-bar');
@@ -363,10 +402,92 @@
             }
         });
 
+        function showOtpLogin() {
+            document.getElementById('login-step-1').style.display = 'none';
+            document.getElementById('login-step-otp').style.display = 'block';
+            if (usernameInput.value) document.getElementById('otp-username').value = usernameInput.value;
+        }
+
+        function showStandardLogin() {
+            document.getElementById('login-step-otp').style.display = 'none';
+            document.getElementById('login-step-1').style.display = 'block';
+        }
+
+        // Use a temporary WS for OTP flow? Or existing logic?
+        // Reuse connect() logic but specifically for OTP handshake.
+        let otpWs = null;
+
+        function requestOtp() {
+            const user = document.getElementById('otp-username').value.trim();
+            if (!user) return alert("Enter username");
+
+            // Connect just to send request
+            if (otpWs) otpWs.close();
+            const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            otpWs = new WebSocket(`${proto}://${window.location.host}/chat?username=${encodeURIComponent(user)}`); // Guest connection
+
+            otpWs.onopen = () => {
+                otpWs.send(JSON.stringify({ type: 'request_otp', username: user }));
+            };
+
+            otpWs.onmessage = (msg) => {
+                const data = JSON.parse(msg.data);
+                if (data.type === 'otp_sent') {
+                    document.getElementById('btn-get-code').style.display = 'none';
+                    document.getElementById('otp-code').style.display = 'block';
+                    document.getElementById('btn-verify-code').style.display = 'block';
+                    alert("Code sent in-game!");
+                } else if (data.type === 'error') {
+                    alert("Error: " + data.message);
+                }
+            };
+        }
+
+        function verifyOtp() {
+            const user = document.getElementById('otp-username').value.trim();
+            const code = document.getElementById('otp-code').value.trim();
+            if (!user || !code) return alert("Enter code");
+
+            if (!otpWs || otpWs.readyState !== WebSocket.OPEN) {
+                // Reconnect if lost
+                const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+                otpWs = new WebSocket(`${proto}://${window.location.host}/chat?username=${encodeURIComponent(user)}`);
+                otpWs.onopen = () => {
+                    otpWs.send(JSON.stringify({ type: 'verify_otp', username: user, code: code }));
+                };
+            } else {
+                otpWs.send(JSON.stringify({ type: 'verify_otp', username: user, code: code }));
+            }
+
+            otpWs.onmessage = (msg) => {
+                const data = JSON.parse(msg.data);
+                if (data.type === 'auth_success') {
+                    localStorage.setItem('chat_token', data.token);
+                    localStorage.setItem('chat_username', data.username);
+                    myUsername = data.username;
+
+                    // Switch to main chat
+                    otpWs.close();
+
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('main-ui').style.display = 'flex';
+                    connect(); // Normal connect uses token from localStorage
+                } else if (data.type === 'error') {
+                    alert("Error: " + data.message);
+                }
+            };
+        }
+
         function connect() {
             const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            const password = encodeURIComponent(passwordInput.value);
-            ws = new WebSocket(`${proto}://${window.location.host}/chat?username=${encodeURIComponent(myUsername)}&password=${password}`);
+            const password = encodeURIComponent(passwordInput.value); // Legacy/Simple
+            const token = localStorage.getItem('chat_token') || "";
+
+            let url = `${proto}://${window.location.host}/chat?username=${encodeURIComponent(myUsername)}`;
+            if (password) url += `&password=${password}`;
+            if (token) url += `&token=${encodeURIComponent(token)}`;
+
+            ws = new WebSocket(url);
 
             ws.onopen = () => {
                 addConnectionDivider("Connected to server");

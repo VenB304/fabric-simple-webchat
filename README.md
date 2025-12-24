@@ -19,7 +19,7 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
     *   **Username Deduplication**: Automatically handles duplicate usernames to prevent confusion.
     *   **Profanity Filter**: Optional basic filter for profanity.
 *   **Security**:
-    *   **Authentication**: Optional simple password protection for the web interface.
+    *   **Authentication**: Optional simple password protection for the web interface. This is a **single shared password** for the server, not individual user accounts.
     *   **SSL/TLS**: Native support for encrypted connections (WSS/HTTPS) if a keystore is provided.
     *   **Proxy Support**: Configurable support for `X-Forwarded-For` headers (default: true).
 *   **Technical**:
@@ -38,10 +38,9 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
 Access the web interface via your server's IP and port (default 25585):
 
 ```
-http://<your-server-ip>:25585/web/index.html
+http://<your-server-ip>:25585/
 ```
 
-> **Note**: You must append `/web/index.html` to the URL.
 
 ## ⚠️ Limitations & Security Disclaimer
 

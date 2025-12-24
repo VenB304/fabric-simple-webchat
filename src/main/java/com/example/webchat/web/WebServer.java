@@ -1,12 +1,17 @@
 package com.example.webchat.web;
 
 import com.example.webchat.bridge.ChatBridge;
+import com.example.webchat.auth.AuthManager;
 import com.example.webchat.config.ModConfig;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 public class WebServer {
     private static Javalin app;
+    private static final Gson gson = new Gson();
 
     public static void start() {
         if (app != null)
@@ -68,18 +73,42 @@ public class WebServer {
                     }
 
                     // Authentication
-                    if (ModConfig.getInstance().enableSimpleAuth) {
+                    if (ModConfig.getInstance().authMode == ModConfig.AuthMode.SIMPLE
+                            || ModConfig.getInstance().enableSimpleAuth) {
                         String pass = ctx.queryParam("password");
                         if (pass == null || !pass.equals(ModConfig.getInstance().webPassword)) {
                             ctx.closeSession(4003, "Forbidden: Invalid Password");
                             return;
                         }
+                    } else if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED) {
+                        String token = ctx.queryParam("token");
+                        AuthManager.Session session = AuthManager.verifySession(token);
+                        if (session != null) {
+                            // Valid session
+                            ctx.attribute("uuid", session.uuid);
+                            ctx.attribute("username", session.username);
+                            ctx.attribute("authenticated", true);
+                        } else {
+                            ctx.attribute("authenticated", false);
+                            // Do NOT close, allow OTP handshake
+                        }
+                    } else {
+                        ctx.attribute("authenticated", true); // Simple/None are implicitly "authenticated" for this
+                                                              // flow check
                     }
 
                     // Username from Query Param
-                    // Username from Query Param
-                    String username = ctx.queryParam("username");
+                    // Username from Query Param or Session
+                    String username = ctx.attribute("username");
+                    if (username == null) {
+                        username = ctx.queryParam("username");
+                    }
+
                     if (username == null || username.trim().isEmpty()) {
+                        if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED) {
+                            ctx.closeSession(4001, "Auth Required"); // Should be handled by token check but safety
+                            return;
+                        }
                         username = "Guest-" + (int) (Math.random() * 1000);
                     }
                     // Sanitize
@@ -113,8 +142,33 @@ public class WebServer {
                     if (message.equals("PING"))
                         return;
 
+                    // JSON Command Handling (OTP)
+                    if (message.startsWith("{")) {
+                        try {
+                            JsonObject json = gson.fromJson(message, JsonObject.class);
+                            if (json.has("type")) {
+                                String type = json.get("type").getAsString();
+                                handleJsonMessage(ctx, type, json);
+                                return;
+                            }
+                        } catch (Exception e) {
+                            // Valid JSON but maybe not a command or just chat that looks like JSON?
+                            // Proceed to treat as chat if it fails specific command checks?
+                            // For now, if it starts with { and parses, we assume it's a command attempt.
+                            // If parsing fails, we might fall through to chat, but safer to log/ignore or
+                            // treat as chat text.
+                        }
+                    }
+
                     String username = ctx.attribute("username");
                     String ip = ctx.attribute("ip");
+
+                    // Enforce Auth for Chat
+                    if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED
+                            && !Boolean.TRUE.equals(ctx.attribute("authenticated"))) {
+                        // Send error?
+                        return;
+                    }
 
                     if (!ModerationManager.checkRateLimit(ip)) {
                         // Send JSON error
@@ -172,6 +226,52 @@ public class WebServer {
             app = null;
         }
 
+    }
+
+    private static void handleJsonMessage(io.javalin.websocket.WsContext ctx, String type, JsonObject json) {
+        if ("request_otp".equals(type)) {
+            String username = json.has("username") ? json.get("username").getAsString() : null;
+            if (username == null || username.isEmpty())
+                return;
+
+            // Find player
+            if (com.example.webchat.bridge.ChatBridge.getServer() == null)
+                return;
+            ServerPlayerEntity player = com.example.webchat.bridge.ChatBridge.getServer().getPlayerManager()
+                    .getPlayer(username);
+
+            if (player != null) {
+                String code = AuthManager.generateOTP(player.getUuid());
+                player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code));
+                ctx.send("{\"type\": \"otp_sent\"}");
+            } else {
+                ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
+            }
+        } else if ("verify_otp".equals(type)) {
+            String username = json.has("username") ? json.get("username").getAsString() : null;
+            String code = json.has("code") ? json.get("code").getAsString() : null;
+
+            if (username == null || code == null)
+                return;
+
+            if (com.example.webchat.bridge.ChatBridge.getServer() == null)
+                return;
+            ServerPlayerEntity player = com.example.webchat.bridge.ChatBridge.getServer().getPlayerManager()
+                    .getPlayer(username);
+            if (player != null) {
+                if (AuthManager.verifyOTP(player.getUuid(), code)) {
+                    String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
+                    ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
+                            + player.getName().getString() + "\"}");
+                } else {
+                    ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
+                }
+            } else {
+                ctx.send("{\"type\": \"error\", \"message\": \"Player not online to verify\"}");
+                // Technically we could verify via cached UUID if we had it, but for safety
+                // requiring online is good.
+            }
+        }
     }
 
     private static boolean containsProfanity(String message) {

@@ -19,6 +19,10 @@ public class ChatBridge {
         server = mcServer;
     }
 
+    public static MinecraftServer getServer() {
+        return server;
+    }
+
     // Called from Web Thread (WebSocket)
     public static void sendToGame(String username, String message) {
         if (server == null)

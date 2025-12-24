@@ -23,3 +23,4 @@ crash-reports/
 # Local config (optional, if you want to keep defaut configs in repo, remove this)
 # config/
 build.log
+build_verify.log

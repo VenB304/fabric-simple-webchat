@@ -21,6 +21,12 @@ public class ModConfig {
     public boolean enableProfanityFilter = false;
     public String webPassword = ""; // Optional simple password for admin actions (not implemented yet)
 
+    public enum AuthMode {
+        NONE, SIMPLE, LINKED
+    }
+
+    public AuthMode authMode = AuthMode.NONE;
+
     // Security Features
     public boolean enableSimpleAuth = false;
     public boolean enableSSL = false;
