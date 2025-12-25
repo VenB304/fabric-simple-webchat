@@ -81,4 +81,9 @@ public class ModConfig {
             e.printStackTrace();
         }
     }
+
+    public static void reset() {
+        instance = new ModConfig();
+        save();
+    }
 }

@@ -77,6 +77,16 @@ public class WebChatMod implements ModInitializer {
                                                 .literal(
                                                         "§a[SimpleWebChat] Configuration reloaded and server restarted!"));
                                         return 1;
+                                    }))
+                            .then(net.minecraft.server.command.CommandManager.literal("reset")
+                                    .executes(context -> {
+                                        ModConfig.reset();
+                                        net.ven.webchat.web.WebServer.stop();
+                                        net.ven.webchat.web.WebServer.start();
+                                        context.getSource().sendMessage(net.minecraft.text.Text
+                                                .literal(
+                                                        "§a[SimpleWebChat] Configuration reset to defaults and server restarted!"));
+                                        return 1;
                                     })));
                     // Alias /swc
                     dispatcher.register(net.minecraft.server.command.CommandManager.literal("swc")
@@ -89,6 +99,16 @@ public class WebChatMod implements ModInitializer {
                                         context.getSource().sendMessage(net.minecraft.text.Text
                                                 .literal(
                                                         "§a[SimpleWebChat] Configuration reloaded and server restarted!"));
+                                        return 1;
+                                    }))
+                            .then(net.minecraft.server.command.CommandManager.literal("reset")
+                                    .executes(context -> {
+                                        ModConfig.reset();
+                                        net.ven.webchat.web.WebServer.stop();
+                                        net.ven.webchat.web.WebServer.start();
+                                        context.getSource().sendMessage(net.minecraft.text.Text
+                                                .literal(
+                                                        "§a[SimpleWebChat] Configuration reset to defaults and server restarted!"));
                                         return 1;
                                     })));
                 });
