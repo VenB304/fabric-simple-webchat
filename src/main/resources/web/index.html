@@ -39,6 +39,33 @@
 
         * {
             box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: var(--text-sec) transparent;
+        }
+
+        /* Custom Scrollbar for WebKit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--text-sec);
+        }
+
+        html {
+            overflow: hidden;
+            overscroll-behavior: none;
+            height: 100%;
         }
 
         body {
@@ -49,8 +76,11 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh;
+            /* Mobile viewport fix */
             width: 100vw;
             overflow: hidden;
+            overscroll-behavior: none;
             transition: background 0.3s, color 0.3s;
         }
 
@@ -216,6 +246,8 @@
         #chat-container {
             flex: 1;
             overflow-y: auto;
+            overscroll-behavior-y: contain;
+            /* prevent pull-to-refresh on mobile */
             padding: 15px;
             display: flex;
             flex-direction: column;
@@ -230,6 +262,7 @@
             border-left: 1px solid var(--border);
             padding: 10px;
             overflow-y: auto;
+            overscroll-behavior-y: contain;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
