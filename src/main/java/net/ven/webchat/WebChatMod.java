@@ -71,9 +71,11 @@ public class WebChatMod implements ModInitializer {
                             .then(net.minecraft.server.command.CommandManager.literal("reload")
                                     .executes(context -> {
                                         ModConfig.load();
+                                        net.ven.webchat.web.WebServer.stop();
+                                        net.ven.webchat.web.WebServer.start();
                                         context.getSource().sendMessage(net.minecraft.text.Text
-                                                .literal("§a[SimpleWebChat] Configuration reloaded!"));
-                                        // Note: Some settings like Port require a restart.
+                                                .literal(
+                                                        "§a[SimpleWebChat] Configuration reloaded and server restarted!"));
                                         return 1;
                                     })));
                     // Alias /swc
@@ -82,8 +84,11 @@ public class WebChatMod implements ModInitializer {
                             .then(net.minecraft.server.command.CommandManager.literal("reload")
                                     .executes(context -> {
                                         ModConfig.load();
+                                        net.ven.webchat.web.WebServer.stop();
+                                        net.ven.webchat.web.WebServer.start();
                                         context.getSource().sendMessage(net.minecraft.text.Text
-                                                .literal("§a[SimpleWebChat] Configuration reloaded!"));
+                                                .literal(
+                                                        "§a[SimpleWebChat] Configuration reloaded and server restarted!"));
                                         return 1;
                                     })));
                 });
