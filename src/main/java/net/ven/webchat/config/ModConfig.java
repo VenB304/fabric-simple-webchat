@@ -15,7 +15,7 @@ public class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Config Fields
-    public int webPort = 25585;
+    public int webPort = 25595;
     public int rateLimitMessagesPerMinute = 20;
     public int maxMessageLength = 256;
     public boolean enableProfanityFilter = false;
@@ -33,6 +33,10 @@ public class ModConfig {
     public String sslKeyStorePassword = "";
     public boolean trustProxy = true;
     public int otpRateLimitSeconds = 30;
+
+    // Message History
+    public int maxHistoryMessages = 50; // 0 = infinite
+    public int messageRetentionMinutes = 30; // 0 = infinite
 
     // Moderation
     public java.util.List<String> profanityList = java.util.Arrays.asList("badword", "naughty");

@@ -99,10 +99,12 @@ public class WebServer {
 
                     if (username == null || username.trim().isEmpty()) {
                         if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED) {
-                            ctx.closeSession(4001, "Auth Required"); // Should be handled by token check but safety
-                            return;
+                            // Allow connection for handshake (OTP Request)
+                            // We do NOT close session here. Auth is enforced later for chat actions.
+                            username = "Guest";
+                        } else {
+                            username = "Guest-" + (int) (Math.random() * 1000);
                         }
-                        username = "Guest-" + (int) (Math.random() * 1000);
                     }
                     // Sanitize
                     if (username.length() > 16)

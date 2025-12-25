@@ -95,6 +95,7 @@ public class ChatBridge {
     }
 
     public static void sendHistoryTo(WsContext ctx) {
+        pruneHistory();
         for (HistoricMessage msg : history) {
             Map<String, String> payload = new java.util.HashMap<>();
             payload.put("type", "message");
@@ -148,18 +149,26 @@ public class ChatBridge {
 
     public static void addToHistory(String user, String message) {
         history.add(new HistoricMessage(user, message));
+        pruneHistory();
+    }
 
-        // Trim history
-        long cutoff = System.currentTimeMillis() - (30 * 60 * 1000); // 30 mins
+    private static void pruneHistory() {
+        int retentionMinutes = net.ven.webchat.config.ModConfig.getInstance().messageRetentionMinutes;
+        int maxMessages = net.ven.webchat.config.ModConfig.getInstance().maxHistoryMessages;
 
-        // Remove old by time
-        while (!history.isEmpty() && history.peek().timestamp < cutoff) {
-            history.poll();
+        // Trim by time (if enabled)
+        if (retentionMinutes > 0) {
+            long cutoff = System.currentTimeMillis() - ((long) retentionMinutes * 60 * 1000);
+            while (!history.isEmpty() && history.peek().timestamp < cutoff) {
+                history.poll();
+            }
         }
 
-        // Remove excess by count (keep max 50)
-        while (history.size() > 50) {
-            history.poll();
+        // Trim by count (if enabled)
+        if (maxMessages > 0) {
+            while (history.size() > maxMessages) {
+                history.poll();
+            }
         }
     }
 }
