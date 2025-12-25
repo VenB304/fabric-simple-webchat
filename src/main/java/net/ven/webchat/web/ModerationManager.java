@@ -77,6 +77,13 @@ public class ModerationManager {
         return false;
     }
 
+    public static long getRateLimitReset(String ip) {
+        long[] data = rateLimits.get(ip);
+        if (data == null)
+            return 0;
+        return data[1];
+    }
+
     private static void loadBans() {
         if (BAN_FILE.exists()) {
             try (FileReader reader = new FileReader(BAN_FILE)) {

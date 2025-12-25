@@ -183,8 +183,12 @@ public class WebServer {
                     }
 
                     if (!ModerationManager.checkRateLimit(ip)) {
+                        long reset = ModerationManager.getRateLimitReset(ip);
+                        long remaining = Math.max(0, (reset - System.currentTimeMillis()) / 1000);
                         // Send JSON error
-                        ctx.send("{\"type\":\"message\", \"user\": \"System\", \"message\": \"Rate limit exceeded.\"}");
+                        ctx.send(
+                                "{\"type\":\"message\", \"user\": \"System\", \"message\": \"Rate limit exceeded. Try again in "
+                                        + remaining + "s.\"}");
                         return;
                     }
 
@@ -270,7 +274,9 @@ public class WebServer {
             net.minecraft.server.MinecraftServer server) {
         String ip = ctx.attribute("ip");
         if (ip != null && !AuthManager.canRequestOtp(ip)) {
-            ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait.\"}");
+            long reset = AuthManager.getOtpResetTime(ip);
+            long remaining = Math.max(0, (reset - System.currentTimeMillis()) / 1000);
+            ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait " + remaining + "s.\"}");
             return;
         }
 

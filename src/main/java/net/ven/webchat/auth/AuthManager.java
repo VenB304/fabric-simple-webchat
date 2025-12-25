@@ -65,6 +65,12 @@ public class AuthManager {
         return true;
     }
 
+    public static long getOtpResetTime(String ip) {
+        long last = otpRateLimit.getOrDefault(ip, 0L);
+        long limit = net.ven.webchat.config.ModConfig.getInstance().otpRateLimitSeconds * 1000L;
+        return last + limit;
+    }
+
     public static String createSession(UUID playerUuid, String username) {
         String token = UUID.randomUUID().toString();
         // Expires in 30 days
