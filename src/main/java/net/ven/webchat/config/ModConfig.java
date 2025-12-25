@@ -10,8 +10,10 @@ import java.io.IOException;
 
 public class ModConfig {
     private static volatile ModConfig instance;
-    private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("web-chat-mod.json")
-            .toFile();
+    private static final java.nio.file.Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir()
+            .resolve("simple-webchat");
+    // Config file location
+    private static final File CONFIG_FILE = CONFIG_DIR.resolve("web-chat-mod.json").toFile();
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Config Fields
@@ -49,6 +51,11 @@ public class ModConfig {
     }
 
     public static void load() {
+        // Ensure directory exists
+        if (!CONFIG_DIR.toFile().exists()) {
+            CONFIG_DIR.toFile().mkdirs();
+        }
+
         if (CONFIG_FILE.exists()) {
             try (FileReader reader = new FileReader(CONFIG_FILE)) {
                 instance = GSON.fromJson(reader, ModConfig.class);

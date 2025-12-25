@@ -15,8 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class AuthManager {
-    private static final File SESSION_FILE = FabricLoader.getInstance().getConfigDir().resolve("web-chat-sessions.json")
-            .toFile();
+    private static final java.nio.file.Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir()
+            .resolve("simple-webchat");
+    private static final File SESSION_FILE = CONFIG_DIR.resolve("sessions.json").toFile();
     private static final Gson GSON = new Gson();
 
     // Token -> Session
@@ -98,6 +99,10 @@ public class AuthManager {
     }
 
     private static void loadSessions() {
+        if (!CONFIG_DIR.toFile().exists()) {
+            CONFIG_DIR.toFile().mkdirs();
+        }
+
         if (SESSION_FILE.exists()) {
             try (FileReader reader = new FileReader(SESSION_FILE)) {
                 Type type = new TypeToken<ConcurrentHashMap<String, Session>>() {
