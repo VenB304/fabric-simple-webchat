@@ -21,7 +21,7 @@ public class WebServer {
         Thread webThread = new Thread(() -> {
             app = Javalin.create(config -> {
                 // Serve static files from 'src/main/resources/web' (classpath)
-                config.staticFiles.add("/web", Location.CLASSPATH);
+                config.staticFiles.add("/webchat-client", Location.CLASSPATH);
 
                 // SSL Support
                 if (ModConfig.getInstance().enableSSL) {

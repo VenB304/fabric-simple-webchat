@@ -25,3 +25,5 @@ crash-reports/
 build.log
 build_verify.log
 *.log
+
+audio-player-mod/
