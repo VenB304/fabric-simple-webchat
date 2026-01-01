@@ -671,7 +671,12 @@
 
             let src = val;
             if (!src.startsWith("http") && !src.startsWith("/")) {
-                src = "/custom/" + src;
+                // Special case for default packaged sound
+                if (val === "ding.mp3") {
+                    src = "ding.mp3"; // Relative to index.html -> /webchat-client/ding.mp3
+                } else {
+                    src = "/custom/" + src;
+                }
             }
 
             const audio = new Audio(src);
