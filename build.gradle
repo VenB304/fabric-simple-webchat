@@ -36,7 +36,8 @@ configurations {
 dependencies {
     // Javalin & Dependencies (Shadowed)
     shadowBundle("io.javalin:javalin:6.1.3")
-    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.17.0") 
+    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.17.0")
+    shadowBundle("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.0") 
 }
 
 processResources {
