@@ -7,6 +7,7 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
 *   **Real-time Chat**: Bidirectional communication between the web interface and Minecraft chat.
 *   **Web Interface**:
     *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer for mobile devices.
+    *   **Double Back Protection**: On mobile, pressing "Back" once shows a toast; pressing it again exits. Prevents accidental closure.
     *   **Theming**: **Light Mode** (default) and **Dark Mode**, with a persistent toggle.
     *   **User Lists**: View currently online players (in-game) and other web users.
     *   **Chat Features**:
@@ -67,6 +68,7 @@ http://<your-server-ip>:25595/
 ### `config/simple-webchat/web-chat-mod.yaml`
 
 Generated on first launch.
+> **Note**: If you are migrating from an older version, your old `web-chat-mod.json` will be automatically backed up and a new `web-chat-mod.yaml` will be created.
 
 ```yaml
 # Fabric Simple WebChat Configuration
@@ -141,9 +143,31 @@ profanityList:
 
 ### `config/simple-webchat/web-chat-bans.json`
 Stores a JSON array of banned IP addresses.
-```json
 [ "192.168.1.50", "10.0.0.1" ]
 ```
+
+## Customization
+
+You can provide custom assets (favicons, sounds) by placing them in the `config/simple-webchat/` directory.
+
+### Custom Favicon
+1. Place your `.ico` or `.png` file in `config/simple-webchat/`.
+2. Update `web-chat-mod.yaml`:
+   ```yaml
+   favicon: "my-icon.png"
+   ```
+
+### Custom Sounds
+1. Place `.mp3` files in `config/simple-webchat/`.
+2. Update `web-chat-mod.yaml` to set the default or add to presets:
+   ```yaml
+   defaultSound: "custom-ding.mp3"
+   soundPresets:
+     - "ding.mp3"
+     - "custom-ding.mp3"
+     - "alert.mp3"
+   ```
+   Users can then select these sounds from the sidebar settings.
 
 ## ⚠️ Security & Limitations
 
