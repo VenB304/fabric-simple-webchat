@@ -4,15 +4,16 @@ import net.ven.webchat.bridge.ChatBridge;
 import net.ven.webchat.auth.AuthHandler;
 import net.ven.webchat.auth.AuthManager;
 import net.ven.webchat.config.ModConfig;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class WebServer {
     private static Javalin app;
-    private static final Gson gson = new Gson();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void start() {
         if (app != null)
@@ -81,7 +82,6 @@ public class WebServer {
                     }
 
                     // Authentication
-                    // Authentication
                     AuthHandler.AuthResult authResult = AuthHandler.handleConnection(ctx);
 
                     if (authResult == AuthHandler.AuthResult.FAILED) {
@@ -97,7 +97,6 @@ public class WebServer {
                         // Do NOT close, allow handshake/login UI
                     }
 
-                    // Username from Query Param
                     // Username from Query Param or Session
                     String username = ctx.attribute("username");
                     if (username == null) {
@@ -107,7 +106,6 @@ public class WebServer {
                     if (username == null || username.trim().isEmpty()) {
                         if (ModConfig.getInstance().authMode == ModConfig.AuthMode.LINKED) {
                             // Allow connection for handshake (OTP Request)
-                            // We do NOT close session here. Auth is enforced later for chat actions.
                             username = "Guest";
                         } else {
                             username = "Guest-" + (int) (Math.random() * 1000);
@@ -119,8 +117,6 @@ public class WebServer {
                     username = username.replaceAll("[^a-zA-Z0-9_]", ""); // Strict characters
 
                     // Deduplicate
-                    // If name is taken by another web user or ingame player, append digits
-                    // Simple check: mostly for web users collision
                     String finalName = username;
                     boolean conflict = ChatBridge.sessionUsernames.containsValue(finalName);
                     if (conflict) {
@@ -145,17 +141,21 @@ public class WebServer {
                     }
 
                     // Send Status to Client
-                    JsonObject status = new JsonObject();
-                    status.addProperty("type", "status");
-                    status.addProperty("authenticated", isAuthenticated);
-                    status.addProperty("authMode", ModConfig.getInstance().authMode.toString());
-                    status.addProperty("username", username);
+                    ObjectNode status = mapper.createObjectNode();
+                    status.put("type", "status");
+                    status.put("authenticated", isAuthenticated);
+                    status.put("authMode", ModConfig.getInstance().authMode.toString());
+                    status.put("username", username);
                     // Custom config
-                    status.addProperty("favicon", ModConfig.getInstance().favicon);
-                    status.addProperty("defaultSound", ModConfig.getInstance().defaultSound);
-                    status.add("soundPresets", gson.toJsonTree(ModConfig.getInstance().soundPresets));
+                    status.put("favicon", ModConfig.getInstance().favicon);
+                    status.put("defaultSound", ModConfig.getInstance().defaultSound);
+                    status.set("soundPresets", mapper.valueToTree(ModConfig.getInstance().soundPresets));
 
-                    ctx.send(gson.toJson(status));
+                    try {
+                        ctx.send(mapper.writeValueAsString(status));
+                    } catch (Exception e) {
+                        net.ven.webchat.WebChatMod.LOGGER.error("Failed to send status", e);
+                    }
 
                     // Notify Join AFTER status (so "Connected" appears before "Joined")
                     if (isAuthenticated) {
@@ -171,18 +171,14 @@ public class WebServer {
                     // JSON Command Handling (OTP)
                     if (message.startsWith("{")) {
                         try {
-                            JsonObject json = gson.fromJson(message, JsonObject.class);
+                            JsonNode json = mapper.readTree(message);
                             if (json.has("type")) {
-                                String type = json.get("type").getAsString();
+                                String type = json.get("type").asText();
                                 handleJsonMessage(ctx, type, json);
                                 return;
                             }
                         } catch (Exception e) {
-                            // Valid JSON but maybe not a command or just chat that looks like JSON?
-                            // Proceed to treat as chat if it fails specific command checks?
-                            // For now, if it starts with { and parses, we assume it's a command attempt.
-                            // If parsing fails, we might fall through to chat, but safer to log/ignore or
-                            // treat as chat text.
+                            // Valid JSON but maybe not a command
                         }
                     }
 
@@ -190,9 +186,7 @@ public class WebServer {
                     String ip = ctx.attribute("ip");
 
                     // Enforce Auth for Chat
-                    // Enforce Auth for Chat
                     if (!AuthHandler.isAuthorized(ctx)) {
-                        // Send error?
                         return;
                     }
 
@@ -216,9 +210,7 @@ public class WebServer {
 
                     // Profanity Filter (Basic)
                     if (ModConfig.getInstance().enableProfanityFilter) {
-                        // Very simple placeholder filter.
                         if (containsProfanity(message)) {
-                            // Option 1: Block silent or loud
                             ctx.send(
                                     "{\"type\":\"message\", \"user\": \"System\", \"message\": \"Message blocked: contains profanity.\"}");
                             return;
@@ -241,7 +233,6 @@ public class WebServer {
 
             // Start
             if (ModConfig.getInstance().enableSSL) {
-                // Connector already added manually in config
                 app.start();
             } else {
                 app.start(ModConfig.getInstance().webPort);
@@ -264,7 +255,7 @@ public class WebServer {
 
     }
 
-    private static void handleJsonMessage(io.javalin.websocket.WsContext ctx, String type, JsonObject json) {
+    private static void handleJsonMessage(io.javalin.websocket.WsContext ctx, String type, JsonNode json) {
         net.minecraft.server.MinecraftServer server = net.ven.webchat.bridge.ChatBridge.getServer();
         if (server == null)
             return;
@@ -284,17 +275,21 @@ public class WebServer {
         });
     }
 
-    private static void handleOtpRequest(io.javalin.websocket.WsContext ctx, JsonObject json,
+    private static void handleOtpRequest(io.javalin.websocket.WsContext ctx, JsonNode json,
             net.minecraft.server.MinecraftServer server) {
         String ip = ctx.attribute("ip");
         if (ip != null && !AuthManager.canRequestOtp(ip)) {
             long reset = AuthManager.getOtpResetTime(ip);
             long remaining = Math.max(0, (reset - System.currentTimeMillis()) / 1000);
-            ctx.send("{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please wait " + remaining + "s.\"}");
+
+            ObjectNode err = mapper.createObjectNode();
+            err.put("type", "error");
+            err.put("message", "Rate limit exceeded. Please wait " + remaining + "s.");
+            ctx.send(err.toString());
             return;
         }
 
-        String username = json.has("username") ? json.get("username").getAsString() : null;
+        String username = json.has("username") ? json.get("username").asText() : null;
         if (username == null || username.isEmpty())
             return;
 
@@ -304,16 +299,22 @@ public class WebServer {
             String code = AuthManager.generateOTP(player.getUuid());
             player.sendMessage(net.minecraft.text.Text.literal("§e[WebChat] Your Login Code: §b§l" + code),
                     false);
-            ctx.send("{\"type\": \"otp_sent\"}");
+
+            ObjectNode msg = mapper.createObjectNode();
+            msg.put("type", "otp_sent");
+            ctx.send(msg.toString());
         } else {
-            ctx.send("{\"type\": \"error\", \"message\": \"Player not online\"}");
+            ObjectNode err = mapper.createObjectNode();
+            err.put("type", "error");
+            err.put("message", "Player not online");
+            ctx.send(err.toString());
         }
     }
 
-    private static void handleOtpVerify(io.javalin.websocket.WsContext ctx, JsonObject json,
+    private static void handleOtpVerify(io.javalin.websocket.WsContext ctx, JsonNode json,
             net.minecraft.server.MinecraftServer server) {
-        String username = json.has("username") ? json.get("username").getAsString() : null;
-        String code = json.has("code") ? json.get("code").getAsString() : null;
+        String username = json.has("username") ? json.get("username").asText() : null;
+        String code = json.has("code") ? json.get("code").asText() : null;
 
         if (username == null || code == null)
             return;
@@ -322,8 +323,17 @@ public class WebServer {
         if (player != null) {
             if (AuthManager.verifyOTP(player.getUuid(), code)) {
                 String token = AuthManager.createSession(player.getUuid(), player.getName().getString());
-                ctx.send("{\"type\": \"auth_success\", \"token\": \"" + token + "\", \"username\": \""
-                        + player.getName().getString() + "\"}");
+
+                ObjectNode response = mapper.createObjectNode();
+                response.put("type", "auth_success");
+                response.put("token", token);
+                response.put("username", player.getName().getString());
+
+                try {
+                    ctx.send(mapper.writeValueAsString(response));
+                } catch (Exception e) {
+                    net.ven.webchat.WebChatMod.LOGGER.error("Failed to send auth success", e);
+                }
             } else {
                 ctx.send("{\"type\": \"error\", \"message\": \"Invalid Code\"}");
             }

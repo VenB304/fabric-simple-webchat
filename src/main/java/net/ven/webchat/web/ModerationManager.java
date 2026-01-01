@@ -1,15 +1,12 @@
 package net.ven.webchat.web;
 
 import net.ven.webchat.config.ModConfig;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import net.fabricmc.loader.api.FabricLoader;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ModerationManager {
     private static final File BAN_FILE = FabricLoader.getInstance().getConfigDir().resolve("web-chat-bans.json")
             .toFile();
-    private static final Gson GSON = new Gson();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static Set<String> bannedIps = Collections.synchronizedSet(new HashSet<>());
 
     // IP -> Timestamp of last message windows
@@ -86,10 +83,9 @@ public class ModerationManager {
 
     private static void loadBans() {
         if (BAN_FILE.exists()) {
-            try (FileReader reader = new FileReader(BAN_FILE)) {
-                Type setType = new TypeToken<HashSet<String>>() {
-                }.getType();
-                Set<String> loaded = GSON.fromJson(reader, setType);
+            try {
+                Set<String> loaded = MAPPER.readValue(BAN_FILE, new TypeReference<HashSet<String>>() {
+                });
                 if (loaded != null)
                     bannedIps.addAll(loaded);
             } catch (IOException e) {
@@ -99,8 +95,8 @@ public class ModerationManager {
     }
 
     private static void saveBans() {
-        try (FileWriter writer = new FileWriter(BAN_FILE)) {
-            GSON.toJson(bannedIps, writer);
+        try {
+            MAPPER.writeValue(BAN_FILE, bannedIps);
         } catch (IOException e) {
             e.printStackTrace();
         }

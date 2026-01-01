@@ -1,14 +1,11 @@
 package net.ven.webchat.auth;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +15,7 @@ public class AuthManager {
     private static final java.nio.file.Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir()
             .resolve("simple-webchat");
     private static final File SESSION_FILE = CONFIG_DIR.resolve("sessions.json").toFile();
-    private static final Gson GSON = new Gson();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     // Token -> Session
     private static final Map<String, Session> sessions = new ConcurrentHashMap<>();
@@ -104,10 +101,10 @@ public class AuthManager {
         }
 
         if (SESSION_FILE.exists()) {
-            try (FileReader reader = new FileReader(SESSION_FILE)) {
-                Type type = new TypeToken<ConcurrentHashMap<String, Session>>() {
-                }.getType();
-                Map<String, Session> loaded = GSON.fromJson(reader, type);
+            try {
+                Map<String, Session> loaded = MAPPER.readValue(SESSION_FILE,
+                        new TypeReference<ConcurrentHashMap<String, Session>>() {
+                        });
                 if (loaded != null) {
                     sessions.putAll(loaded);
                 }
@@ -120,8 +117,8 @@ public class AuthManager {
     private static void saveSessions() {
         // Run in background to avoid blocking main thread or web server thread
         ioExecutor.submit(() -> {
-            try (FileWriter writer = new FileWriter(SESSION_FILE)) {
-                GSON.toJson(sessions, writer);
+            try {
+                MAPPER.writeValue(SESSION_FILE, sessions);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -151,10 +148,15 @@ public class AuthManager {
         }
     }
 
+    // Default constructor needed for Jackson deserialization if no creators are
+    // found
     public static class Session {
         public UUID uuid;
         public String username;
         public long expiry;
+
+        public Session() {
+        } // Jackson needs this
 
         public Session(UUID uuid, String username, long expiry) {
             this.uuid = uuid;

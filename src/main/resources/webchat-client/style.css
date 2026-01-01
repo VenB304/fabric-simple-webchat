@@ -1,0 +1,378 @@
+:root {
+    /* Default Light Mode Tweaks */
+    --bg-body: #f0f2f5;
+    /* Slightly darker white for contrast */
+    --bg-panel: #ffffff;
+    --bg-input: #f8f9fa;
+    --bg-header: #ffffff;
+    --bg-message: #ffffff;
+    --text-main: #212529;
+    /* Darker black */
+    --text-sec: #6c757d;
+    --border: #dee2e6;
+    --shadow: rgba(0, 0, 0, 0.08);
+    --primary: #0d6efd;
+    --primary-hover: #0b5ed7;
+}
+
+body.dark-mode {
+    --bg-body: #121212;
+    --bg-panel: #1e1e1e;
+    --bg-input: #2d2d2d;
+    --bg-header: #181818;
+    --bg-message: #1e1e1e;
+    --text-main: #e0e0e0;
+    --text-sec: #aaaaaa;
+    --border: #333333;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --primary: #4fc3f7;
+    --primary-hover: #0288d1;
+}
+
+* {
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-sec) transparent;
+}
+
+/* Custom Scrollbar for WebKit */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-sec);
+}
+
+html {
+    overflow: hidden;
+    overscroll-behavior: none;
+    height: 100%;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-body);
+    color: var(--text-main);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    /* Mobile viewport fix */
+    width: 100vw;
+    overflow: hidden;
+    overscroll-behavior: none;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* Login Screen */
+#login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: var(--bg-body);
+    z-index: 200;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+#login-box {
+    background: var(--bg-panel);
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 6px var(--shadow);
+    width: 80%;
+    max-width: 320px;
+}
+
+#login-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: var(--primary);
+}
+
+.input-group {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+button.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+button.btn-secondary {
+    background: #444;
+    /* Keep specific buttons dark/custom? Or use var */
+    margin-top: 10px;
+}
+
+button.btn-success {
+    background: #388e3c;
+}
+
+button.btn-warning {
+    background: #f57f17;
+}
+
+.error-msg {
+    color: #ff5252;
+    margin-top: 10px;
+    font-size: 14px;
+    display: none;
+}
+
+/* Main UI */
+#header-bar {
+    display: none;
+    background: var(--bg-header);
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+    flex-shrink: 0;
+}
+
+#header-title {
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-sec);
+    font-size: 16px;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-left: 10px;
+    border-radius: 4px;
+}
+
+#menu-btn {
+    font-size: 20px;
+    display: none;
+    /* Hidden by default (Desktop) */
+}
+
+#logout-btn {
+    background: #c62828;
+    border: none;
+    color: white;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+/* New: Login Toggle Position */
+#login-theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--text-sec);
+}
+
+#main-ui {
+    display: none;
+    flex-direction: row;
+    flex: 1;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+#chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    position: relative;
+}
+
+#chat-container {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    /* prevent pull-to-refresh on mobile */
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg-body);
+    scroll-behavior: smooth;
+}
+
+#sidebar {
+    width: 220px;
+    background: var(--bg-header);
+    border-left: 1px solid var(--border);
+    padding: 10px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    font-weight: bold;
+    color: var(--text-sec);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    margin-top: 10px;
+}
+
+.user-item {
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    #header-bar {
+        display: flex;
+    }
+
+    #menu-btn {
+        display: block;
+        /* Show on mobile */
+    }
+
+    #sidebar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        z-index: 100;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+        border-left: none;
+    }
+
+    #sidebar.open {
+        transform: translateX(0);
+    }
+
+    #overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 90;
+    }
+
+    #overlay.open {
+        display: block;
+    }
+}
+
+.message {
+    background: var(--bg-message);
+    padding: 8px 12px;
+    border-radius: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+    box-shadow: 0 1px 2px var(--shadow);
+}
+
+.message .user {
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.message .text {
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+#input-area {
+    padding: 15px;
+    background: var(--bg-panel);
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+#input-area input {
+    flex: 1;
+}
+
+/* --- Features --- */
+
+/* Timestamp */
+.timestamp {
+    font-size: 0.75rem;
+    color: var(--text-sec);
+    margin-right: 8px;
+    opacity: 0.7;
+    font-family: monospace; /* Optional: simpler timestamp look */
+}
+
+/* Mentions */
+.message.mention {
+    border-left: 3px solid var(--primary);
+    background-color: rgba(13, 110, 253, 0.1); /* Fallback/Default Blue tint */
+}
+body.dark-mode .message.mention {
+    background-color: rgba(79, 195, 247, 0.15); /* Light blue tint for dark mode */
+}

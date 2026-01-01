@@ -7,7 +7,7 @@ import net.minecraft.util.Formatting;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ChatBridge {
     private static MinecraftServer server;
@@ -15,7 +15,7 @@ public class ChatBridge {
     public static final Set<WsContext> activeSessions = ConcurrentHashMap.newKeySet();
     public static final Map<WsContext, String> sessionUsernames = new ConcurrentHashMap<>();
 
-    private static final Gson GSON = new Gson();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static void setServer(MinecraftServer mcServer) {
         server = mcServer;
@@ -58,7 +58,13 @@ public class ChatBridge {
         payload.put("user", sender);
         payload.put("message", message);
 
-        String jsonPayload = GSON.toJson(payload);
+        String jsonPayload;
+        try {
+            jsonPayload = MAPPER.writeValueAsString(payload);
+        } catch (Exception e) {
+            net.ven.webchat.WebChatMod.LOGGER.error("Failed to serialize message", e);
+            return;
+        }
 
         for (WsContext ctx : activeSessions) {
             if (ctx.session.isOpen()) {
@@ -85,7 +91,13 @@ public class ChatBridge {
             payload.put("players", players);
             payload.put("webUsers", webUsers);
 
-            String json = GSON.toJson(payload);
+            String json;
+            try {
+                json = MAPPER.writeValueAsString(payload);
+            } catch (Exception e) {
+                net.ven.webchat.WebChatMod.LOGGER.error("Failed to serialize user list", e);
+                return;
+            }
 
             for (WsContext ctx : activeSessions) {
                 if (ctx.session.isOpen())
@@ -101,7 +113,11 @@ public class ChatBridge {
             payload.put("type", "message");
             payload.put("user", msg.user);
             payload.put("message", msg.message);
-            ctx.send(GSON.toJson(payload));
+            try {
+                ctx.send(MAPPER.writeValueAsString(payload));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -129,8 +145,6 @@ public class ChatBridge {
             broadcastUserList(); // Update everyone's list
         });
     }
-
-    // escape method removed as it is no longer needed with Gson
 
     // History Management
     private static class HistoricMessage {
