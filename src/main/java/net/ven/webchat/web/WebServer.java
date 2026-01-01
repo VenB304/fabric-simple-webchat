@@ -23,6 +23,13 @@ public class WebServer {
                 // Serve static files from 'src/main/resources/web' (classpath)
                 config.staticFiles.add("/webchat-client", Location.CLASSPATH);
 
+                // Serve custom assets from config dir
+                config.staticFiles.add(sf -> {
+                    sf.hostedPath = "/custom";
+                    sf.directory = ModConfig.CONFIG_DIR.toFile().getAbsolutePath();
+                    sf.location = Location.EXTERNAL;
+                });
+
                 // SSL Support
                 if (ModConfig.getInstance().enableSSL) {
                     // Note: Basic SSL setup. For production, a proper keystore is needed.
@@ -143,6 +150,11 @@ public class WebServer {
                     status.addProperty("authenticated", isAuthenticated);
                     status.addProperty("authMode", ModConfig.getInstance().authMode.toString());
                     status.addProperty("username", username);
+                    // Custom config
+                    status.addProperty("favicon", ModConfig.getInstance().favicon);
+                    status.addProperty("defaultSound", ModConfig.getInstance().defaultSound);
+                    status.add("soundPresets", gson.toJsonTree(ModConfig.getInstance().soundPresets));
+
                     ctx.send(gson.toJson(status));
 
                     // Notify Join AFTER status (so "Connected" appears before "Joined")
