@@ -149,7 +149,10 @@ public class WebServer {
                     // Custom config
                     status.put("favicon", ModConfig.getInstance().favicon);
                     status.put("defaultSound", ModConfig.getInstance().defaultSound);
+                    status.put("defaultSound", ModConfig.getInstance().defaultSound);
                     status.set("soundPresets", mapper.valueToTree(ModConfig.getInstance().soundPresets));
+                    status.put("webChatTitle", ModConfig.getInstance().webChatTitle);
+                    status.put("webChatHeader", ModConfig.getInstance().webChatHeader);
 
                     try {
                         ctx.send(mapper.writeValueAsString(status));

@@ -57,6 +57,10 @@ public class ModConfig {
     public String defaultSound = "ding.mp3";
     public List<String> soundPresets = new ArrayList<>(Arrays.asList("ding.mp3"));
 
+    // --- UI Customization ---
+    public String webChatTitle = "Simple WebChat";
+    public String webChatHeader = "Web Chat";
+
     // --- Moderation ---
     public boolean enableProfanityFilter = false;
     public List<String> profanityList = new ArrayList<>(Arrays.asList("exampleBadWord1", "exampleBadword2"));
@@ -109,6 +113,12 @@ public class ModConfig {
             # List of available sounds in the sidebar
             soundPresets:
               - "ding.mp3"
+
+            # --- UI Customization ---
+            # Title of the browser tab/window
+            webChatTitle: "Simple WebChat"
+            # Text displayed in the header bar
+            webChatHeader: "Web Chat"
 
             # --- Moderation ---
             enableProfanityFilter: false

@@ -123,9 +123,16 @@ function attemptConnect() {
                 handleStatus(data);
             } else if (data.type === 'message') {
                 addMessage(data.user, data.message);
-                // Play sound if not from me and not system?
-                if (data.user !== myUsername) {
-                    playSound();
+                // Notification Logic
+                const soundSetting = localStorage.getItem('swc_sound'); // Get fresh
+                const isMention = myUsername && data.message.includes("@" + myUsername);
+
+                if (data.user !== myUsername && data.user !== "System") {
+                    if (soundSetting === 'mentions-only') {
+                        if (isMention) playSound();
+                    } else {
+                        playSound(); // Default behavior (handled inside which checks for 'none')
+                    }
                 }
             } else if (data.type === 'playerList') {
                 updateLists(data.players, data.webUsers);
@@ -244,6 +251,11 @@ function handleStatus(status) {
     optSilent.innerText = 'Silent';
     select.appendChild(optSilent);
 
+    let optMentions = document.createElement('option');
+    optMentions.value = 'mentions-only';
+    optMentions.innerText = 'Mentions Only';
+    select.appendChild(optMentions);
+
     let optDefault = document.createElement('option');
     optDefault.value = status.defaultSound || 'ding.mp3'; // Fallback
     optDefault.innerText = 'Default'; // or name of file?
@@ -268,6 +280,13 @@ function handleStatus(status) {
         select.value = savedSound;
     } else {
         select.value = status.defaultSound || 'ding.mp3';
+    }
+    if (status.webChatTitle) {
+        document.title = status.webChatTitle;
+        document.getElementById('login-title').innerText = status.webChatTitle;
+    }
+    if (status.webChatHeader) {
+        document.getElementById('header-title').innerText = status.webChatHeader;
     }
 }
 
@@ -428,14 +447,14 @@ document.getElementById('linked-code').addEventListener('keypress', e => e.key =
 function addMessage(user, text) {
     const div = document.createElement('div');
     div.className = 'message';
-    
+
     // Feature: Mentions
     if (myUsername && text.includes("@" + myUsername)) {
         div.classList.add('mention');
     }
 
     const color = getUsernameColor(user);
-    
+
     let formattedText = escapeHtml(text);
 
     // System message formatting
@@ -454,33 +473,169 @@ function addMessage(user, text) {
     const timestampHtml = `<span class="timestamp">${timeStr}</span>`;
 
     div.innerHTML = `${timestampHtml}<span class="user" style="color: ${color}">${escapeHtml(user)}</span><span class="text">${formattedText}</span>`;
-    
+
     chatContainer.appendChild(div);
     if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)
         chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function updateLists(players, webUsers) {
-    playerListDiv.innerHTML = players.map(p => `<div class="user-item" style="color:${getUsernameColor(p)}">${escapeHtml(p)}</div>`).join('');
-    webUserListDiv.innerHTML = webUsers.map(u => `<div class="user-item" style="color:${getUsernameColor(u)}">${escapeHtml(u)}</div>`).join('');
-}
-
-function addConnectionDivider(text) {
-    const div = document.createElement('div');
-    div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: var(--text-sec); font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
-    const line = "flex: 1; height: 1px; background: var(--border); margin: 0 10px;";
-    div.innerHTML = `<div style="${line}"></div><span>${escapeHtml(text)}</span><div style="${line}"></div>`;
-    chatContainer.appendChild(div);
-    // Scroll to bottom helper
-    if (chatContainer.scrollHeight - chatContainer.scrollTop < 1500) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-}
-
-const COLORS = ["#e60000", "#0000e6", "#00b300", "#e6e600", "#e68a00", "#bf00bf", "#00bfbf", "#e66699", "#99e699", "#804d00"];
-function getUsernameColor(username) {
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    return COLORS[Math.abs(hash % COLORS.length)];
+return COLORS[Math.abs(hash % COLORS.length)];
 }
 function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', '\'': '&#039;' }[m]; }); }
+
+// --- Global Helpers for OnClick --
+window.mentionUser = function (username) {
+    const input = document.getElementById('message');
+    input.value += (input.value.length > 0 && !input.value.endsWith(' ') ? ' ' : '') + "@" + username + " ";
+    input.focus();
+}
+
+
+// --- Global List State for Mention Dropdown ---
+let globalWebUsers = [];
+
+function updateLists(players, webUsers) {
+    globalWebUsers = webUsers; // Store for autocomplete
+    // Add onclick to list items
+    playerListDiv.innerHTML = players.map(p => `<div class="user-item" style="color:${getUsernameColor(p)}" onclick="mentionUser('${escapeHtml(p)}')">${escapeHtml(p)}</div>`).join('');
+    webUserListDiv.innerHTML = webUsers.map(u => `<div class="user-item" style="color:${getUsernameColor(u)}" onclick="mentionUser('${escapeHtml(u)}')">${escapeHtml(u)}</div>`).join('');
+}
+
+// Override addMessage to add onclick
+function addMessage(user, text) {
+    const div = document.createElement('div');
+    div.className = 'message';
+
+    if (myUsername && text.includes("@" + myUsername)) {
+        div.classList.add('mention');
+    }
+
+    const color = getUsernameColor(user);
+
+    let formattedText = escapeHtml(text);
+    if (user === "System") {
+        const match = text.match(/^(.+?)\s+(joined|left)/);
+        if (match) {
+            const name = match[1];
+            const nameColor = getUsernameColor(name);
+            formattedText = formattedText.replace(name, `<span style="color:${nameColor}; font-weight:bold;">${escapeHtml(name)}</span>`);
+        }
+    }
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timestampHtml = `<span class="timestamp">${timeStr}</span>`;
+
+    // Added onclick to user span
+    div.innerHTML = `${timestampHtml}<span class="user" style="color: ${color}; cursor:pointer;" onclick="mentionUser('${escapeHtml(user)}')">${escapeHtml(user)}</span><span class="text">${formattedText}</span>`;
+
+    chatContainer.appendChild(div);
+    if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+
+// --- Mention Dropdown Logic ---
+const dropdown = document.getElementById('mention-dropdown');
+let selectedIndex = 0;
+let mentionMatches = [];
+
+messageInput.addEventListener('input', function (e) {
+    const val = this.value;
+    const cursorPos = this.selectionStart;
+
+    // Find the word being typed
+    const textBeforeCursor = val.substring(0, cursorPos);
+    const lastAt = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAt !== -1) {
+        // Check if there are spaces between @ and cursor, if so, we might have moved past it
+        // BUT we want to allow "@User Na" potentially? No, username regex is strict usually.
+        // Let's assume usernames have no spaces for now based on backend logic.
+        const query = textBeforeCursor.substring(lastAt + 1);
+        if (!query.includes(' ')) {
+            // We are autocompleting
+            showSuggestions(query);
+            return;
+        }
+    }
+    hideSuggestions();
+});
+
+messageInput.addEventListener('keydown', function (e) {
+    if (dropdown.style.display === 'flex') {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(0, selectedIndex - 1);
+            renderSuggestions();
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(mentionMatches.length - 1, selectedIndex + 1);
+            renderSuggestions();
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            if (mentionMatches[selectedIndex]) {
+                selectSuggestion(mentionMatches[selectedIndex]);
+            }
+        } else if (e.key === 'Escape') {
+            hideSuggestions();
+        }
+    }
+});
+
+function showSuggestions(query) {
+    // Filter webUsers
+    mentionMatches = globalWebUsers.filter(u => u.toLowerCase().startsWith(query.toLowerCase()));
+
+    if (mentionMatches.length === 0) {
+        hideSuggestions();
+        return;
+    }
+
+    selectedIndex = 0; // Reset
+    dropdown.style.display = 'flex';
+    renderSuggestions();
+}
+
+function hideSuggestions() {
+    dropdown.style.display = 'none';
+}
+
+function renderSuggestions() {
+    dropdown.innerHTML = '';
+    // Reverse logic? HTML structure is flex-direction: column-reverse? 
+    // Wait, CSS said flex-direction: column-reverse? No, I put flex-direction: column-reverse in CSS comment but wrote display:none.
+    // Let's check CSS... #mention-dropdown { ... display: none; ... }
+    // We should style it to appear ABOVE.
+    // Using bottom: 70px which is fixed.
+    // We probably want the list to be normal order, but the visual position is bottom-up?
+
+    mentionMatches.forEach((user, idx) => {
+        const div = document.createElement('div');
+        div.className = 'mention-item';
+        if (idx === selectedIndex) div.classList.add('selected');
+        div.innerText = user;
+        div.onclick = () => selectSuggestion(user);
+        dropdown.appendChild(div);
+    });
+}
+
+function selectSuggestion(username) {
+    const val = messageInput.value;
+    const cursorPos = messageInput.selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPos);
+    const lastAt = textBeforeCursor.lastIndexOf('@');
+
+    const before = val.substring(0, lastAt);
+    const after = val.substring(cursorPos);
+
+    messageInput.value = before + "@" + username + " " + after;
+    hideSuggestions();
+
+    // Restore focus and cursor?
+    messageInput.focus();
+    // cursor at end of inserted
+    /*
+    const newPos = (before + "@" + username + " ").length;
+    messageInput.setSelectionRange(newPos, newPos);
+    */
+}
