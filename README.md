@@ -6,31 +6,25 @@ A lightweight, server-side Fabric mod that adds a mobile-friendly web chat inter
 
 *   **Real-time Chat**: Bidirectional communication between the web interface and Minecraft chat.
 *   **Web Interface**:
-    *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer for mobile devices.
-    *   **Double Back Protection**: On mobile, pressing "Back" once shows a toast; pressing it again exits. Prevents accidental closure.
-    *   **Theming**: **Light Mode** (default) and **Dark Mode**, with a persistent toggle.
-    *   **User Lists**: View currently online players (in-game) and other web users.
-    *   **Chat Features**:
+    *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer. Back-button protection prevents accidental exits.
+    *   **Theming**: Toggle between **Light Mode** and **Dark Mode**.
+    *   **Customizable UI**: Configure the browser tab title and header text to match your server's identity.
+    *   **Rich Chat**:
         *   **Timestamps**: Local time display for every message.
-        *   **Mentions**: Highlights messages that mention your username.
-        *   **History**: See the recent chat history (last 50 messages) immediately upon joining.
-    *   **Login System**:
-        *   **Simple Auth**: Shared password protection.
-        *   **Account Linking (OTP)**: Securely link your Minecraft account to the web chat using an in-game One-Time Password.
+        *   **@Mentions**: 
+            *   **Highlighting**: Messages mentioning you are highlighted.
+            *   **Autocomplete**: Type `@` to see a dropdown of online web users.
+            *   **Click-to-Mention**: Click any username to instantly tag them.
+        *   **History**: Retains recent chat history (last 50 messages) for new joiners.
+    *   **Notifications**:
+        *   **Controls**: Mute sounds, select a custom sound/ding, or enable **Mentions Only** mode.
+    *   **User Lists**: View online Minecraft players and connected Web Users.
+*   **Security & Auth**:
+    *   **Three Modes**: No Auth, Simple Password, or **Account Linking** (link your Minecraft account via in-game OTP).
+    *   **Secure**: Rate limiting, brute-force protection, and strict session management.
+    *   **SSL/TLS**: Built-in support for encrypted connections.
 *   **Moderation**:
-    *   **Rate Limiting**: IP-based rate limiting for messages and OTP requests.
-    *   **Banning**: `/ban-ip` style JSON-based ban list support.
-    *   **Sanitization**: Automatically strips Minecraft color codes (`§`) from web messages.
-    *   **Profanity Filter**: Configurable list of banned words.
-*   **Security**:
-    *   **Flexible Auth Modes**: Choose between No Auth, Simple Password, or Account Linking.
-    *   **SSL/TLS**: Native support for encrypted connections (WSS/HTTPS) if a keystore is provided.
-    *   **Proxy Support**: Configurable support for `X-Forwarded-For` headers (default: true).
-*   **Technical**:
-    *   **Performance**: Uses **Javalin** for a lightweight, high-performance web server.
-    *   **Refactored Client**: Modular web client structure for better caching and maintainability.
-    *   **Thread Safety**: Robust thread bridging between the Web thread and Minecraft Server thread.
-    *   **Resource Management**: Automatic cleanup of expired sessions and stale data.
+    *   **Safety**: Anti-spam rate limiting, JSON-based IP banning (`/ban-ip`), and a configurable profanity filter.
 
 ## Installation
 
@@ -49,97 +43,76 @@ http://<your-server-ip>:25595/
 
 ### Commands
 
-*   `/swc reload` (or `/simplewebchat reload`): Reloads the configuration and restarts the web server without stopping the Minecraft server.
-*   `/swc reset` (or `/simplewebchat reset`): Resets the configuration to defaults and restarts the web server.
+*   `/swc reload`: Reloads configuration and restarts the web server (without restarting Minecraft).
+*   `/swc reset`: Resets configuration to defaults.
 *   *Requires OP level 2.*
 
 ### Login Methods
 
-1.  **Guest (NONE Mode)**: Enter a username to join.
-2.  **Simple (SIMPLE Mode)**: Enter a username and the server-configured password.
+1.  **Guest (NONE Mode)**: Enter any username.
+2.  **Simple (SIMPLE Mode)**: Enter a username and the server password.
 3.  **Account Linking (LINKED Mode)**:
     *   Enter your Minecraft username.
     *   Click "Get Code".
-    *   You will receive a 6-digit code in-game (you must be online).
-    *   Enter the code in the web interface to verify and link your account.
+    *   Receive a 6-digit code in-game.
+    *   Enter the code to verify ownership and log in.
 
 ## Configuration Guide
 
 ### `config/simple-webchat/web-chat-mod.yaml`
 
-Generated on first launch.
-> **Note**: If you are migrating from an older version, your old `web-chat-mod.json` will be automatically backed up and a new `web-chat-mod.yaml` will be created.
+This file handles all server-side settings. Use `/swc reload` to apply changes instantly.
 
 ```yaml
-# Fabric Simple WebChat Configuration
-# You can rearrange these options and add comments.
+# --- UI Customization ---
+# Title of the browser tab/window
+webChatTitle: "Simple WebChat"
+# Text displayed in the header bar
+webChatHeader: "Web Chat"
 
 # --- Server Settings ---
-# The port the web server will listen on.
 webPort: 25595
-# Set to true if running behind a reverse proxy (e.g. Nginx, Cloudflare) to correctly identify client IPs.
 trustProxy: true
 
 # --- Authentication ---
 # Options: NONE, SIMPLE, LINKED
-# NONE: No authentication required.
-# SIMPLE: Single password for all users.
-# LINKED: Users must link their Minecraft account via OTP.
 authMode: NONE
-
-# Required if AuthMode is SIMPLE.
 webPassword: ""
-
-# Seconds between OTP requests (LINKED mode).
 otpRateLimitSeconds: 30
 
 # --- Security (SSL) ---
-# Enable built-in SSL support (not recommended if using a reverse proxy).
 enableSSL: false
-# Path to PKCS12 or JKS keystore.
 sslKeyStorePath: ""
-# Password for the keystore.
 sslKeyStorePassword: ""
 
 # --- Chat Limits ---
 maxMessageLength: 256
-# Number of messages to keep in memory for history implementation.
 maxHistoryMessages: 50
-# Max age of messages in memory (minutes).
 messageRetentionMinutes: 30
 rateLimitMessagesPerMinute: 20
 
 # --- Customization ---
-# URL to an icon or path (relative to config dir or absolute)
 favicon: "favicon.ico"
-# Default sound file name
 defaultSound: "ding.mp3"
-# List of available sounds in the sidebar
 soundPresets:
   - "ding.mp3"
 
 # --- Moderation ---
 enableProfanityFilter: false
-# List of words to filter
-profanityList:
-  - "exampleBadWord1"
-  - "exampleBadword2"
+profanityList: []
 ```
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `webPort` | `int` | `25595` | The port the web server listens on. |
-| `trustProxy` | `boolean` | `true` | Trust `X-Forwarded-For` headers (useful behind Nginx/Cloudflare). |
-| `authMode` | `enum` | `NONE` | Authentication mode (`NONE`, `SIMPLE`, `LINKED`). |
-| `webPassword` | `string` | `""` | Password required if `authMode` is `SIMPLE`. |
-| `otpRateLimitSeconds` | `int` | `30` |  Cooldown for requesting OTP codes. |
-| `enableSSL` | `boolean` | `false` | Enables HTTPS/WSS. Requires keystore. |
-| `sslKeyStorePath` | `string` | `""` | Path to the JKS/PKCS12 keystore file for SSL. |
-| `maxMessageLength` | `int` | `256` | Maximum characters allowed in a single message. |
-| `enableProfanityFilter` | `boolean` | `false` | Enables the profanity filter. |
-| `profanityList` | `list` | `[]` | List of words to filter if enabled. |
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `webChatTitle` | `"Simple WebChat"` | Title shown in the browser tab. |
+| `webChatHeader` | `"Web Chat"` | Text shown in the top header bar. |
+| `webPort` | `25595` | Port for the web server. |
+| `authMode` | `NONE` | Auth strategy: `NONE`, `SIMPLE` (password), `LINKED` (OTP). |
+| `webPassword` | `""` | Password for `SIMPLE` mode. |
+| `enableSSL` | `false` | Enable HTTPS (requires valid keystore). |
+| `trustProxy` | `true` | Trust `X-Forwarded-For` headers (for Nginx/Cloudflare). |
 
 ### `config/simple-webchat/web-chat-bans.json`
 Stores a JSON array of banned IP addresses.
