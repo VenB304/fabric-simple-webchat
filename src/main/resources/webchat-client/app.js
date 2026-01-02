@@ -444,42 +444,23 @@ document.getElementById('none-username').addEventListener('keypress', e => e.key
 document.getElementById('simple-password').addEventListener('keypress', e => e.key === 'Enter' && loginSimple());
 document.getElementById('linked-code').addEventListener('keypress', e => e.key === 'Enter' && verifyOtp());
 
-function addMessage(user, text) {
+function addConnectionDivider(text) {
     const div = document.createElement('div');
-    div.className = 'message';
-
-    // Feature: Mentions
-    if (myUsername && text.includes("@" + myUsername)) {
-        div.classList.add('mention');
-    }
-
-    const color = getUsernameColor(user);
-
-    let formattedText = escapeHtml(text);
-
-    // System message formatting
-    if (user === "System") {
-        const match = text.match(/^(.+?)\s+(joined|left)/);
-        if (match) {
-            const name = match[1];
-            const nameColor = getUsernameColor(name);
-            formattedText = formattedText.replace(name, `<span style="color:${nameColor}; font-weight:bold;">${escapeHtml(name)}</span>`);
-        }
-    }
-
-    // Feature: Timestamp
-    // 12-hour format with AM/PM
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const timestampHtml = `<span class="timestamp">${timeStr}</span>`;
-
-    div.innerHTML = `${timestampHtml}<span class="user" style="color: ${color}">${escapeHtml(user)}</span><span class="text">${formattedText}</span>`;
-
+    div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: var(--text-sec); font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
+    const line = "flex: 1; height: 1px; background: var(--border); margin: 0 10px;";
+    div.innerHTML = `<div style="${line}"></div><span>${escapeHtml(text)}</span><div style="${line}"></div>`;
     chatContainer.appendChild(div);
-    if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)
+    // Scroll to bottom helper
+    if (chatContainer.scrollHeight - chatContainer.scrollTop < 1500) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 }
 
-return COLORS[Math.abs(hash % COLORS.length)];
+const COLORS = ["#e60000", "#0000e6", "#00b300", "#e6e600", "#e68a00", "#bf00bf", "#00bfbf", "#e66699", "#99e699", "#804d00"];
+function getUsernameColor(username) {
+    let hash = 0;
+    for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
+    return COLORS[Math.abs(hash % COLORS.length)];
 }
 function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', '\'': '&#039;' }[m]; }); }
 
