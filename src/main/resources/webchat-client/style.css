@@ -270,6 +270,7 @@ button.btn-warning {
 }
 
 .user-item {
+    cursor: pointer;
     padding: 6px 0;
     font-size: 14px;
     border-bottom: 1px solid var(--border);

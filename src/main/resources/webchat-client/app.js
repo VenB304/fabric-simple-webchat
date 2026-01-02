@@ -125,13 +125,14 @@ function attemptConnect() {
                 addMessage(data.user, data.message);
                 // Notification Logic
                 const soundSetting = localStorage.getItem('swc_sound'); // Get fresh
+                const mentionsOnly = localStorage.getItem('swc_mentions_only') === 'true';
                 const isMention = myUsername && data.message.includes("@" + myUsername);
 
                 if (data.user !== myUsername && data.user !== "System") {
-                    if (soundSetting === 'mentions-only') {
+                    if (mentionsOnly) {
                         if (isMention) playSound();
                     } else {
-                        playSound(); // Default behavior (handled inside which checks for 'none')
+                        playSound(); // Default (checks 'none' internally)
                     }
                 }
             } else if (data.type === 'playerList') {
@@ -183,6 +184,11 @@ function attemptConnect() {
 function updateSoundSetting() {
     const val = document.getElementById('sound-select').value;
     localStorage.setItem('swc_sound', val);
+}
+
+function updateMentionsOnly() {
+    const val = document.getElementById('mentions-only-toggle').checked;
+    localStorage.setItem('swc_mentions_only', val);
 }
 
 function playSound() {
@@ -250,11 +256,7 @@ function handleStatus(status) {
     optSilent.value = 'none';
     optSilent.innerText = 'Silent';
     select.appendChild(optSilent);
-
-    let optMentions = document.createElement('option');
-    optMentions.value = 'mentions-only';
-    optMentions.innerText = 'Mentions Only';
-    select.appendChild(optMentions);
+    // Mentions Only removed from dropdown, now a checkbox
 
     let optDefault = document.createElement('option');
     optDefault.value = status.defaultSound || 'ding.mp3'; // Fallback
@@ -281,6 +283,11 @@ function handleStatus(status) {
     } else {
         select.value = status.defaultSound || 'ding.mp3';
     }
+
+    // Restore Mentions Only Checkbox
+    const savedMentionsOnly = localStorage.getItem('swc_mentions_only') === 'true';
+    document.getElementById('mentions-only-toggle').checked = savedMentionsOnly;
+
     if (status.webChatTitle) {
         document.title = status.webChatTitle;
         document.getElementById('login-title').innerText = status.webChatTitle;
@@ -499,7 +506,7 @@ function addMessage(user, text) {
         if (match) {
             const name = match[1];
             const nameColor = getUsernameColor(name);
-            formattedText = formattedText.replace(name, `<span style="color:${nameColor}; font-weight:bold;">${escapeHtml(name)}</span>`);
+            formattedText = formattedText.replace(name, `<span style="color:${nameColor}; font-weight:bold; cursor:pointer;" onclick="mentionUser('${escapeHtml(name)}')">${escapeHtml(name)}</span>`);
         }
     }
 
