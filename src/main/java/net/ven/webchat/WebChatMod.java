@@ -8,6 +8,7 @@ import net.ven.webchat.bridge.ChatBridge;
 import net.ven.webchat.web.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 
 public class WebChatMod implements ModInitializer {
     public static final String MOD_ID = "simple-webchat";
@@ -67,7 +68,7 @@ public class WebChatMod implements ModInitializer {
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT
                 .register((dispatcher, registryAccess, environment) -> {
                     dispatcher.register(net.minecraft.server.command.CommandManager.literal("simplewebchat")
-                            .requires(source -> source.hasPermissionLevel(2))
+                            .requires(Permissions.require("simplewebchat.command", 2))
                             .then(net.minecraft.server.command.CommandManager.literal("reload")
                                     .executes(context -> {
                                         ModConfig.load();
@@ -90,7 +91,7 @@ public class WebChatMod implements ModInitializer {
                                     })));
                     // Alias /swc
                     dispatcher.register(net.minecraft.server.command.CommandManager.literal("swc")
-                            .requires(source -> source.hasPermissionLevel(2))
+                            .requires(Permissions.require("simplewebchat.command", 2))
                             .then(net.minecraft.server.command.CommandManager.literal("reload")
                                     .executes(context -> {
                                         ModConfig.load();
