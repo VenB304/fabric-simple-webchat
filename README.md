@@ -41,13 +41,11 @@ A server-side Fabric mod that embeds a lightweight web server, allowing users to
 
 ## Usage
 
-Access the web interface via your server's IP and port (default 25585):
+Access the web interface via your server's IP and port (default 28660):
 
 ```
-http://<your-server-ip>:25585/web/index.html
+http://<your-server-ip>:28660/
 ```
-
-> **Note**: You must append `/web/index.html` to the URL.
 
 Leaving the username field blank and clicking Connect is fine — you'll be assigned a random `Guest-####` name.
 
@@ -83,7 +81,7 @@ Set `requireLinkToChat: true` in the config if you want unlinked guests to be ab
 This mod was built for a specific use case and might not be suitable for all public servers. Please consider the following before installing:
 
 1.  **No Password Authentication**: There's no account/password system. Anyone can join the web chat as an unverified guest with almost any name. Account **linking** (see below) lets users prove in-game identity without a password, and `requireLinkToChat` can make it mandatory to send messages — but it's opt-in, not the default.
-2.  **Open Port**: This mod opens a web server on your machine (default port 25585). You must ensure this port is properly firewalled or tunneled (e.g., Cloudflare Tunnel) to prevent direct IP leaks or unauthorized access if not intended.
+2.  **Open Port**: This mod opens a web server on your machine (default port 28660, deliberately uncommon to reduce collision risk with other mods/services). You must ensure this port is properly firewalled or tunneled (e.g., Cloudflare Tunnel) to prevent direct IP leaks or unauthorized access if not intended.
 3.  **Basic Moderation**: While it includes IP bans, rate limiting, a connection cap, and an optional profanity filter, it **does not** integrate with advanced moderation plugins (like AdvancedBan, LiteBans) or Discord.
 
 ## Configuration
@@ -93,7 +91,7 @@ Generated on first launch. Values are validated on load; out-of-range values are
 
 ```json
 {
-  "webPort": 25585,
+  "webPort": 28660,
   "rateLimitMessagesPerMinute": 20,
   "maxMessageLength": 256,
   "maxConnectionsPerIp": 5,
@@ -124,7 +122,8 @@ Generated on first launch. Values are validated on load; out-of-range values are
 *   `requireLinkToChat` — if true, unlinked (guest) web users can still connect and read chat, but can't send messages until they link via `/webchat link`. See [Account Linking](#account-linking).
 *   `linkAttemptsPerMinute` — caps how many `LINK`/`UNLINK` attempts a single IP can make per minute, independent of the normal chat rate limit, so a script can't brute-force a 6-character link code by hammering guesses.
 *   `linkTokenExpiryDays` — how long a persistent link token stays valid before the browser must re-link. `0` (default) means tokens never expire.
-*   `showPlayerHeads` / `headUrlTemplate` — shows a head/avatar icon beside each online player in the sidebar. `headUrlTemplate` supports `{uuid}` and `{name}` placeholders and defaults to the public `mc-heads.net` (resolves Mojang skins). Point it at your own skin server instead — e.g. a self-hosted [bluemap-custom-skin-server](https://github.com/syorito-hatsuki/bluemap-custom-skin-server) or similar proxy that can resolve SkinsRestorer/custom skins — if you run one, so player UUIDs/names aren't sent to a third party.
+*   `showPlayerHeads` — shows a head icon beside each online player, in both the sidebar and the chat feed. The face is cropped client-side from whatever skin texture is actually on the player's `GameProfile` — the same texture Mojang sets for premium accounts, or whatever a skin-restoring mod (e.g. SkinsRestorer) patched in for an offline/cracked account. This works correctly either way with no mod-specific integration needed on our side.
+*   `headUrlTemplate` — fallback only, used if a player has no resolvable skin texture (rare). Supports `{uuid}` and `{name}` placeholders, defaults to the public `mc-heads.net`.
 *   `enableTls` / `tlsKeystorePath` / `tlsKeystorePassword` — lets the mod serve HTTPS/WSS directly from a Java keystore (PKCS12 or JKS) instead of requiring a reverse proxy. If you'd rather terminate TLS at a reverse proxy (Nginx, Caddy, Cloudflare Tunnel), leave this disabled.
 *   `webChatTitle` / `webChatHeader` — browser tab title and in-app header text.
 *   `defaultSound` — the sound file served for the "Default" notification option; must exist under the mod's `web/` resources (only `ding.mp3` ships out of the box).

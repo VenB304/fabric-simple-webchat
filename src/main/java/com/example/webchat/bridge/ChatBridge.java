@@ -98,12 +98,21 @@ public class ChatBridge {
             return;
 
         server.execute(() -> {
-            // Get In-Game Players (with UUID, so the client can render head/avatar icons)
+            // Get In-Game Players (with UUID + skin texture, so the client can render head
+            // icons). The "textures" GameProfile property is whatever the server actually
+            // resolved for that player - Mojang's real texture for premium accounts, or
+            // whatever a skin-restoring mod (e.g. SkinsRestorer) patched in for an
+            // offline/cracked account - so this works correctly either way without us
+            // needing any mod-specific integration.
             List<Map<String, Object>> players = new ArrayList<>();
             for (var player : server.getPlayerList().getPlayers()) {
                 Map<String, Object> entry = new HashMap<>();
                 entry.put("name", player.getName().getString());
                 entry.put("uuid", player.getUUID().toString());
+                var textures = player.getGameProfile().properties().get("textures");
+                if (!textures.isEmpty()) {
+                    entry.put("skin", textures.iterator().next().value());
+                }
                 players.add(entry);
             }
             onlinePlayerNamesLower = players.stream()

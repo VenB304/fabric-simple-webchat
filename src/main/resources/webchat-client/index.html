@@ -203,6 +203,7 @@
             border-radius: 2px;
             image-rendering: pixelated;
             flex-shrink: 0;
+            display: inline-block;
         }
 
         /* Mobile Styles */
@@ -688,24 +689,55 @@
             }
         }
 
-        function headImg(uuid, name) {
-            if (!showPlayerHeads || !uuid) return '';
-            const src = headUrlTemplate.replace('{uuid}', encodeURIComponent(uuid)).replace('{name}', encodeURIComponent(name));
-            return `<img class="player-head" src="${src}" alt="" onerror="this.style.display='none'" title="${escapeHtml(name)}">`;
+        // Decodes a Mojang GameProfile "textures" property (base64 JSON) into the actual
+        // skin image URL. Works the same whether it's a genuine Mojang texture or one a
+        // skin-restoring mod (e.g. SkinsRestorer) patched onto the player's profile for an
+        // offline/cracked account - we don't care how it got there, just what it points to.
+        function extractSkinUrl(base64Value) {
+            try {
+                const json = JSON.parse(atob(base64Value));
+                return (json.textures && json.textures.SKIN && json.textures.SKIN.url) || null;
+            } catch (e) {
+                return null;
+            }
         }
 
-        // Current online players by lowercased name -> uuid, so chat messages can show a
-        // head icon for whoever's still online (no icon if they've since left, or for
-        // web guests who have no Minecraft account/UUID at all).
+        // Renders just the face region of a skin texture via CSS background cropping
+        // (assumes a standard 64-wide skin sheet; face is at (8,8)-(16,16), hat overlay
+        // layer at (40,8)-(48,16)) rather than fetching a pre-rendered avatar.
+        function skinHeadHtml(skinUrl, name, size) {
+            const safeUrl = skinUrl.replace(/'/g, '%27');
+            const scale = size / 8;
+            const bg = Math.round(64 * scale);
+            const off = Math.round(8 * scale);
+            return `<span class="player-head" style="background-image:url('${safeUrl}');background-size:${bg}px ${bg}px;background-position:-${off}px -${off}px" title="${escapeHtml(name)}"></span>`;
+        }
+
+        function headHtml(player, name) {
+            if (!showPlayerHeads || !player) return '';
+            if (player.skin) {
+                const skinUrl = extractSkinUrl(player.skin);
+                if (skinUrl) return skinHeadHtml(skinUrl, name, 20);
+            }
+            if (player.uuid) {
+                const src = headUrlTemplate.replace('{uuid}', encodeURIComponent(player.uuid)).replace('{name}', encodeURIComponent(name));
+                return `<img class="player-head" src="${src}" alt="" onerror="this.style.display='none'" title="${escapeHtml(name)}">`;
+            }
+            return '';
+        }
+
+        // Current online players by lowercased name -> {uuid, skin}, so chat messages can
+        // show a head icon for whoever's still online (no icon if they've since left, or
+        // for web guests who have no Minecraft account at all).
         let onlinePlayerHeads = {};
 
         function updateLists(players, webUsers) {
             globalMentionCandidates = players.map(p => p.name).concat(webUsers.map(u => u.name));
             onlinePlayerHeads = {};
-            players.forEach(p => { onlinePlayerHeads[p.name.toLowerCase()] = p.uuid; });
+            players.forEach(p => { onlinePlayerHeads[p.name.toLowerCase()] = p; });
 
             playerListDiv.innerHTML = players.map(p =>
-                `<div class="user-item" onclick="mentionUser('${escapeHtml(p.name)}')">${headImg(p.uuid, p.name)}<span style="color:${getUsernameColor(p.name)}">${escapeHtml(p.name)}</span></div>`
+                `<div class="user-item" onclick="mentionUser('${escapeHtml(p.name)}')">${headHtml(p, p.name)}<span style="color:${getUsernameColor(p.name)}">${escapeHtml(p.name)}</span></div>`
             ).join('');
             webUserListDiv.innerHTML = webUsers.map(u =>
                 `<div class="user-item" style="color:${getUsernameColor(u.name)}" onclick="mentionUser('${escapeHtml(u.name)}')">${u.linked ? '<span class="linked-badge">✓</span>' : ''}${escapeHtml(u.name)}</div>`
@@ -801,7 +833,7 @@
             const timeHtml = time ? `<span class="time">${escapeHtml(formatTime(time))}</span>` : '';
             const badgeHtml = linked ? '<span class="linked-badge" title="Linked web session">✓</span>'
                 : (inGame ? '<span class="ingame-badge" title="Sent from in-game">🎮</span>' : '');
-            const senderHead = headImg(onlinePlayerHeads[user.toLowerCase()], user);
+            const senderHead = headHtml(onlinePlayerHeads[user.toLowerCase()], user);
             div.innerHTML = `${timeHtml}${senderHead}${badgeHtml}<span class="user" style="color: ${color}" onclick="mentionUser('${escapeHtml(user)}')">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
             chatContainer.appendChild(div);
             // Auto-scroll

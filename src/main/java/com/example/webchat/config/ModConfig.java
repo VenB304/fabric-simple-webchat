@@ -20,7 +20,7 @@ public class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Config Fields
-    public int webPort = 25585;
+    public int webPort = 28660; // deliberately uncommon - avoids colliding with other mods/services
     public int rateLimitMessagesPerMinute = 20;
     public int maxMessageLength = 256;
     public int maxConnectionsPerIp = 5;
@@ -107,8 +107,8 @@ public class ModConfig {
     /** Clamps out-of-range values to safe defaults instead of trusting a hand-edited file. */
     private void validate() {
         if (webPort < 1 || webPort > 65535) {
-            WebChatMod.LOGGER.warn("Invalid webPort {} in config, falling back to 25585", webPort);
-            webPort = 25585;
+            WebChatMod.LOGGER.warn("Invalid webPort {} in config, falling back to 28660", webPort);
+            webPort = 28660;
         }
         if (rateLimitMessagesPerMinute <= 0) {
             WebChatMod.LOGGER.warn("Invalid rateLimitMessagesPerMinute {} in config, falling back to 20",

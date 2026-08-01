@@ -38,8 +38,13 @@ public class WebServer {
                 ModConfig config = ModConfig.getInstance();
 
                 app = Javalin.create(cfg -> {
-                    // Serve static files from 'src/main/resources/web' (classpath)
-                    cfg.staticFiles.add("/web", Location.CLASSPATH);
+                    // Serve static files from 'src/main/resources/webchat-client' (classpath).
+                    // Deliberately NOT named "web" - Fabric merges every mod's resources onto
+                    // one shared classpath, and a generic folder name like "web" can collide
+                    // with another mod that happens to use the same name (hit in production:
+                    // audioplayer-fabric also ships a top-level "web/" resource folder, which
+                    // silently won the classpath lookup instead of ours).
+                    cfg.staticFiles.add("/webchat-client", Location.CLASSPATH);
 
                     if (config.enableTls) {
                         cfg.jetty.addConnector((server, httpConfig) -> buildSslConnector(server, config));
