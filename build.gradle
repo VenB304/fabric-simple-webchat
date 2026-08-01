@@ -1,7 +1,7 @@
 plugins {
-	id 'fabric-loom' version '1.8-SNAPSHOT'
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
 	id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.6.0'
     id 'java'
 }
 
@@ -14,20 +14,14 @@ base {
 
 repositories {
 	mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-    maven { url 'https://maven.lucko.me/' }
 }
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    
-    // Permissions API
-    include(modImplementation("me.lucko:fabric-permissions-api:0.3.3"))
+    // Fabric API
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
 
 configurations {
@@ -40,9 +34,16 @@ configurations {
 
 dependencies {
     // Javalin & Dependencies (Shadowed)
-    shadowBundle("io.javalin:javalin:6.1.3")
-    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-    shadowBundle("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.0") 
+    shadowBundle("io.javalin:javalin:6.7.0")
+    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+
+    testImplementation platform("org.junit:junit-bom:5.11.0")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
 }
 
 processResources {
@@ -54,32 +55,38 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
 }
 
 java {
 	withSourcesJar()
 
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
+}
+
+jar {
+    archiveClassifier.set("plain")
 }
 
 shadowJar {
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier.set("dev-shadow") // prevent overwriting the main jar immediately or conflict
-    
+    archiveClassifier.set("")
+
     // Relocate to avoid conflicts
-    // Relocate to avoid conflicts
-    relocate 'io.javalin', 'net.ven.webchat.shadow.javalin'
-    relocate 'com.fasterxml.jackson', 'net.ven.webchat.shadow.jackson'
-    relocate 'org.eclipse.jetty', 'net.ven.webchat.shadow.jetty'
+    relocate 'io.javalin', 'com.example.webchat.shadow.javalin'
+    relocate 'com.fasterxml.jackson', 'com.example.webchat.shadow.jackson'
+    relocate 'org.eclipse.jetty', 'com.example.webchat.shadow.jetty'
     // Do NOT relocate SLF4J - use the game's logger integration
-    relocate 'kotlin', 'net.ven.webchat.shadow.kotlin'
+    relocate 'kotlin', 'com.example.webchat.shadow.kotlin'
 }
 
-remapJar {
+// Minecraft is unobfuscated from 26.1 onward, so there is no remap step:
+// shadowJar's relocated+bundled output is the final artifact.
+tasks.named("build") {
     dependsOn shadowJar
-    inputFile.set(shadowJar.archiveFile)
-    archiveClassifier.set("")
+}
+tasks.named("assemble") {
+    dependsOn shadowJar
 }

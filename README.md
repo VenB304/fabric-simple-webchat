@@ -1,158 +1,149 @@
-# Fabric Simple WebChat
+# Minecraft Web Chat Mod (Fabric 26.2+)
 
-A lightweight, server-side Fabric mod that adds a mobile-friendly web chat interface to your Minecraft server.
+A server-side Fabric mod that embeds a lightweight web server, allowing users to chat with players in-game directly from their web browser.
 
 ## Features
 
 *   **Real-time Chat**: Bidirectional communication between the web interface and Minecraft chat.
 *   **Web Interface**:
-    *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer. Back-button protection prevents accidental exits.
-    *   **Theming**: Toggle between **Light Mode** and **Dark Mode**.
-    *   **Customizable UI**: Configure the browser tab title and header text to match your server's identity.
-    *   **Rich Chat**:
-        *   **Timestamps**: Local time display for every message.
-        *   **@Mentions**: 
-            *   **Highlighting**: Messages mentioning you are highlighted.
-            *   **Autocomplete**: Type `@` to see a dropdown of online web users.
-            *   **Click-to-Mention**: Click any username to instantly tag them.
-        *   **History**: Retains recent chat history (last 50 messages) for new joiners.
-    *   **Notifications**:
-        *   **Controls**: Mute sounds, select a custom sound/ding, or enable **Mentions Only** mode.
-    *   **User Lists**: View online Minecraft players and connected Web Users.
-*   **Security & Auth**:
-    *   **Three Modes**: No Auth, Simple Password, or **Account Linking** (link your Minecraft account via in-game OTP).
-    *   **Secure**: Rate limiting, brute-force protection, and strict session management.
-    *   **SSL/TLS**: Built-in support for encrypted connections.
+    *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer for mobile devices.
+    *   **Light/Dark Theme**: Toggle button, persisted per-browser.
+    *   **@Mentions**: Highlighting when you're mentioned, `@` autocomplete dropdown (online players + web users), click any username to mention them.
+    *   **Notification Sounds**: Default ding on new messages, mutable, with a "mentions only" mode.
+    *   **Custom Branding**: Server owners can set the browser tab title and header text via config.
+    *   **User Lists**: View currently online players (in-game) and other web users.
+    *   **Login System**: Simple username prompt upon connection (persisted via local storage).
+    *   **Account Linking**: Optionally prove you control an in-game account via a one-time code, without a password system. Linked users get their real username, a verified badge, and a persistent browser token so they don't need to re-link every visit.
+    *   **Optional Shared Password**: A separate, independent gate — require a server-wide password to connect at all, on top of (or instead of) account linking.
+    *   **History**: See the recent chat history (last 50 messages) immediately upon joining, with timestamps.
+    *   **Connection Status**: Visual indicators for when you connect/disconnect.
 *   **Moderation**:
-    *   **Safety**: Anti-spam rate limiting, JSON-based IP banning (`/ban-ip`), and a configurable profanity filter.
+    *   **In-game commands**: `/webchat ban|unban|kick|list|reload`, no more hand-editing JSON.
+    *   **Rate Limiting**: Built-in IP-based rate limiting to prevent spam.
+    *   **Connection Cap**: Limits concurrent web sessions per IP to stop socket-flood spam.
+    *   **Banning**: JSON-based ban list, manageable via commands or by hand.
+    *   **Profanity Filter**: Optional, config-driven word list (disabled and empty by default).
+    *   **Sanitization**: automatically strips Minecraft color codes (`§`) from web messages.
+    *   **Username Deduplication**: Automatically handles duplicate usernames to prevent confusion.
+    *   **Chat Log**: Every message is appended to a rotating log file on disk for moderation/audit.
+*   **Technical**:
+    *   **Proxy Support**: Support for `X-Forwarded-For` headers (e.g., Cloudflare Tunnels).
+    *   **Optional built-in TLS**: Run HTTPS/WSS directly from a keystore, no reverse proxy required.
+    *   **Performance**: Uses **Javalin** for a lightweight, high-performance web server.
+    *   **Thread Safety**: Robust thread bridging between the Web thread and Minecraft Server thread.
 
 ## Installation
 
 1.  Download the latest release `.jar`.
 2.  Place it in your server's `mods` folder.
 3.  Start the server.
-4.  The configuration files will be generated in `config/simple-webchat/`.
+4.  The configuration files will be generated in `config/web-chat-mod/`.
 
 ## Usage
 
-Access the web interface via your server's IP and port (default 25595):
+Access the web interface via your server's IP and port (default 25585):
 
 ```
-http://<your-server-ip>:25595/
+http://<your-server-ip>:25585/web/index.html
 ```
 
-### Commands
+> **Note**: You must append `/web/index.html` to the URL.
 
-*   `/swc reload`: Reloads configuration and restarts the web server (without restarting Minecraft).
-*   `/swc reset`: Resets configuration to defaults.
-*   *Requires OP level 2.*
+Leaving the username field blank and clicking Connect is fine — you'll be assigned a random `Guest-####` name.
 
-### Login Methods
+A `GET /health` endpoint is also available, returning JSON (`status`, `uptimeMillis`, `connectedWebUsers`) for uptime monitors or Crafty.
 
-1.  **Guest (NONE Mode)**: Enter any username.
-2.  **Simple (SIMPLE Mode)**: Enter a username and the server password.
-3.  **Account Linking (LINKED Mode)**:
-    *   Enter your Minecraft username.
-    *   Click "Get Code".
-    *   Receive a 6-digit code in-game.
-    *   Enter the code to verify ownership and log in.
+A `GET /webchat-config.json` endpoint (public, unauthenticated) exposes just the branding/UI fields (`webChatTitle`, `webChatHeader`, `defaultSound`, `passwordRequired`) so the page can apply them before login.
 
-## Configuration Guide
+## Moderation Commands
 
-### `config/simple-webchat/web-chat-mod.yaml`
+All `/webchat` subcommands require the server-defined "admins" permission level.
 
-This file handles all server-side settings. Use `/swc reload` to apply changes instantly.
+| Command | Description |
+| --- | --- |
+| `/webchat ban <ip>` | Bans an IP address from the web chat. |
+| `/webchat unban <ip>` | Removes an IP ban. |
+| `/webchat kick <username>` | Disconnects a currently connected web user. |
+| `/webchat list` | Lists currently connected web users. |
+| `/webchat reload` | Reloads `web-chat-mod.json` without restarting the server (does not change the listening port). |
+| `/webchat link` | **Any player** — generates a 6-character code (valid 5 minutes), sent privately, to redeem on the web chat page. |
+| `/webchat unlink` | **Any player** — unlinks your own web chat account(s). |
+| `/webchat unlink <username>` | Admin-only — force-unlinks another player's account (e.g. lost/compromised device). |
 
-```yaml
-# --- UI Customization ---
-# Title of the browser tab/window
-webChatTitle: "Simple WebChat"
-# Text displayed in the header bar
-webChatHeader: "Web Chat"
+## Account Linking
 
-# --- Server Settings ---
-webPort: 25595
-trustProxy: true
+1. In-game, run `/webchat link`. You'll get a one-time code, valid for 5 minutes.
+2. On the web chat page, click **🔗 Link Account** in the sidebar and enter the code.
+3. Your web session is now tied to that exact in-game username — a ✓ badge appears next to your name, you get a persistent browser token so you won't need to re-link on your next visit, and no other guest can pick your username.
 
-# --- Authentication ---
-# Options: NONE, SIMPLE, LINKED
-authMode: NONE
-webPassword: ""
-otpRateLimitSeconds: 30
+Set `requireLinkToChat: true` in the config if you want unlinked guests to be able to read chat but not send messages until they link.
 
-# --- Security (SSL) ---
-enableSSL: false
-sslKeyStorePath: ""
-sslKeyStorePassword: ""
+## ⚠️ Limitations & Security Disclaimer
 
-# --- Chat Limits ---
-maxMessageLength: 256
-maxHistoryMessages: 50
-messageRetentionMinutes: 30
-rateLimitMessagesPerMinute: 20
+This mod was built for a specific use case and might not be suitable for all public servers. Please consider the following before installing:
 
-# --- Customization ---
-favicon: "favicon.ico"
-defaultSound: "ding.mp3"
-soundPresets:
-  - "ding.mp3"
+1.  **No Password Authentication**: There's no account/password system. Anyone can join the web chat as an unverified guest with almost any name. Account **linking** (see below) lets users prove in-game identity without a password, and `requireLinkToChat` can make it mandatory to send messages — but it's opt-in, not the default.
+2.  **Open Port**: This mod opens a web server on your machine (default port 25585). You must ensure this port is properly firewalled or tunneled (e.g., Cloudflare Tunnel) to prevent direct IP leaks or unauthorized access if not intended.
+3.  **Basic Moderation**: While it includes IP bans, rate limiting, a connection cap, and an optional profanity filter, it **does not** integrate with advanced moderation plugins (like AdvancedBan, LiteBans) or Discord.
 
-# --- Moderation ---
-enableProfanityFilter: false
-profanityList: []
+## Configuration
+
+### `config/web-chat-mod/config.json`
+Generated on first launch. Values are validated on load; out-of-range values are reset to their default and logged as a warning.
+
+```json
+{
+  "webPort": 25585,
+  "rateLimitMessagesPerMinute": 20,
+  "maxMessageLength": 256,
+  "maxConnectionsPerIp": 5,
+  "enableProfanityFilter": false,
+  "profanityWords": [],
+  "historyMaxAgeMinutes": 30,
+  "historyMaxCount": 50,
+  "allowedOrigins": [],
+  "requireLinkToChat": false,
+  "linkAttemptsPerMinute": 10,
+  "linkTokenExpiryDays": 0,
+  "enableTls": false,
+  "tlsKeystorePath": "",
+  "tlsKeystorePassword": "",
+  "webChatTitle": "Minecraft Web Chat",
+  "webChatHeader": "Web Chat",
+  "defaultSound": "ding.mp3",
+  "webPassword": ""
+}
 ```
 
-### Configuration Options
+*   `maxConnectionsPerIp` — caps concurrent web sessions from a single IP.
+*   `enableProfanityFilter` / `profanityWords` — when enabled, matching words are replaced with asterisks. Empty by default; populate `profanityWords` with whatever list you want enforced.
+*   `historyMaxAgeMinutes` / `historyMaxCount` — how much chat history new web clients get replayed on connect.
+*   `allowedOrigins` — if non-empty, only websocket connections whose `Origin` header exactly matches an entry in this list are accepted (e.g. `["https://chat.venb.top"]`). Leave empty while testing over a bare IP; set it once you're behind your real domain, otherwise anyone could iframe/embed your chat endpoint from another site.
+*   `requireLinkToChat` — if true, unlinked (guest) web users can still connect and read chat, but can't send messages until they link via `/webchat link`. See [Account Linking](#account-linking).
+*   `linkAttemptsPerMinute` — caps how many `LINK`/`UNLINK` attempts a single IP can make per minute, independent of the normal chat rate limit, so a script can't brute-force a 6-character link code by hammering guesses.
+*   `linkTokenExpiryDays` — how long a persistent link token stays valid before the browser must re-link. `0` (default) means tokens never expire.
+*   `enableTls` / `tlsKeystorePath` / `tlsKeystorePassword` — lets the mod serve HTTPS/WSS directly from a Java keystore (PKCS12 or JKS) instead of requiring a reverse proxy. If you'd rather terminate TLS at a reverse proxy (Nginx, Caddy, Cloudflare Tunnel), leave this disabled.
+*   `webChatTitle` / `webChatHeader` — browser tab title and in-app header text.
+*   `defaultSound` — the sound file served for the "Default" notification option; must exist under the mod's `web/` resources (only `ding.mp3` ships out of the box).
+*   `webPassword` — if non-empty, **every** web connection must supply this exact password to connect at all, independent of account linking. Empty (default) disables it.
 
-| Option | Default | Description |
-| :--- | :--- | :--- |
-| `webChatTitle` | `"Simple WebChat"` | Title shown in the browser tab. |
-| `webChatHeader` | `"Web Chat"` | Text shown in the top header bar. |
-| `webPort` | `25595` | Port for the web server. |
-| `authMode` | `NONE` | Auth strategy: `NONE`, `SIMPLE` (password), `LINKED` (OTP). |
-| `webPassword` | `""` | Password for `SIMPLE` mode. |
-| `enableSSL` | `false` | Enable HTTPS (requires valid keystore). |
-| `trustProxy` | `true` | Trust `X-Forwarded-For` headers (for Nginx/Cloudflare). |
+A web user whose chosen name matches a currently online player, or another connected web user, is automatically suffixed with digits to prevent impersonation/confusion.
 
-### `config/simple-webchat/web-chat-bans.json`
-Stores a JSON array of banned IP addresses.
-[ "192.168.1.50", "10.0.0.1" ]
-```
+All of the mod's runtime files live under a single `config/web-chat-mod/` folder:
 
-## Customization
-
-You can provide custom assets (favicons, sounds) by placing them in the `config/simple-webchat/` directory.
-
-### Custom Favicon
-1. Place your `.ico` or `.png` file in `config/simple-webchat/`.
-2. Update `web-chat-mod.yaml`:
-   ```yaml
-   favicon: "my-icon.png"
-   ```
-
-### Custom Sounds
-1. Place `.mp3` files in `config/simple-webchat/`.
-2. Update `web-chat-mod.yaml` to set the default or add to presets:
-   ```yaml
-   defaultSound: "custom-ding.mp3"
-   soundPresets:
-     - "ding.mp3"
-     - "custom-ding.mp3"
-     - "alert.mp3"
-   ```
-   Users can then select these sounds from the sidebar settings.
-
-## ⚠️ Security & Limitations
-
-1.  **Open Port**: This mod opens a web server on your machine (default port 25595). **Ensure you configure your firewall correctly.**
-2.  **HTTPS**: By default, traffic is unencrypted (HTTP). For production use, enable SSL with a keystore or use a reverse proxy (Nginx/Cloudflare).
+| File | Purpose |
+| --- | --- |
+| `config.json` | Settings, shown above. |
+| `bans.json` | JSON array of banned IP addresses. Prefer `/webchat ban`/`/webchat unban` over hand-editing this while the server is running. |
+| `links.json` | Maps persistent link tokens to the in-game account they're verified for. Managed automatically by `/webchat link`/`unlink`. |
+| `chat.log` | Plain-text chat log, one line per message, rotated once it exceeds 5 MB. |
 
 ## Building from Source
 
-This project uses Gradle.
+This project uses Gradle and targets Minecraft 26.2, which ships unobfuscated (no Yarn mappings) via Fabric Loom.
 
 **Prerequisites:**
-*   Java 21 JDK
+*   Java 25 JDK
 
 **Build:**
 ```powershell
@@ -162,7 +153,7 @@ This project uses Gradle.
 # Linux/Mac
 ./gradlew build
 ```
-The output jar will be located in `build/libs/`.
+The output jar will be located in `build/libs/`. Run `./gradlew test` to run the unit test suite.
 
 ## License
 
