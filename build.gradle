@@ -1,0 +1,92 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+    id 'com.gradleup.shadow' version '9.6.0'
+    id 'java'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    implementation.extendsFrom shadowBundle
+}
+
+dependencies {
+    // Javalin & Dependencies (Shadowed)
+    shadowBundle("io.javalin:javalin:6.7.0")
+    shadowBundle("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+
+    testImplementation platform("org.junit:junit-bom:5.11.0")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	withSourcesJar()
+
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+jar {
+    archiveClassifier.set("plain")
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier.set("")
+
+    // Relocate to avoid conflicts
+    relocate 'io.javalin', 'com.example.webchat.shadow.javalin'
+    relocate 'com.fasterxml.jackson', 'com.example.webchat.shadow.jackson'
+    relocate 'org.eclipse.jetty', 'com.example.webchat.shadow.jetty'
+    // Do NOT relocate SLF4J - use the game's logger integration
+    relocate 'kotlin', 'com.example.webchat.shadow.kotlin'
+}
+
+// Minecraft is unobfuscated from 26.1 onward, so there is no remap step:
+// shadowJar's relocated+bundled output is the final artifact.
+tasks.named("build") {
+    dependsOn shadowJar
+}
+tasks.named("assemble") {
+    dependsOn shadowJar
+}
