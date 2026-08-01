@@ -5,9 +5,26 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChatHistoryTest {
+
+    @Test
+    void tracksLinkedAndInGameIndependently() {
+        ChatHistory history = new ChatHistory(Long.MAX_VALUE, 100);
+        history.add("guest", "hi", 0L); // neither
+        history.add("linkedWebUser", "hi", 1L, true); // linked web session
+        history.add("aPlayer", "hi", 2L, false, true); // native in-game chat
+
+        List<ChatHistory.Entry> snapshot = history.snapshot();
+        assertFalse(snapshot.get(0).linked());
+        assertFalse(snapshot.get(0).inGame());
+        assertTrue(snapshot.get(1).linked());
+        assertFalse(snapshot.get(1).inGame());
+        assertFalse(snapshot.get(2).linked());
+        assertTrue(snapshot.get(2).inGame());
+    }
 
     @Test
     void trimsExcessEntriesByCount() {

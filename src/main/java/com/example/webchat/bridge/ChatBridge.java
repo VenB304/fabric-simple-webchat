@@ -53,14 +53,27 @@ public class ChatBridge {
         });
     }
 
-    // Called from Game Thread (Mixin/Event) for game-originated system/chat messages
+    // Called from Game Thread (Mixin/Event) for "System" join/leave notifications - no
+    // badge either way, since these aren't chat messages from a specific person.
     public static void broadcastToWeb(String sender, String message) {
-        broadcastToWeb(sender, message, false);
+        broadcastToWeb(sender, message, false, false);
     }
 
+    // Called from Game Thread for a real in-game player's chat message: typing in
+    // Minecraft is inherently verified (you can't fake being logged in as a player),
+    // so this gets its own badge, distinct from a linked web session's checkmark.
+    public static void broadcastGameMessage(String sender, String message) {
+        broadcastToWeb(sender, message, false, true);
+    }
+
+    // Called from the Web Thread's echo-back after a web user's message reaches the game.
     public static void broadcastToWeb(String sender, String message, boolean linked) {
+        broadcastToWeb(sender, message, linked, false);
+    }
+
+    private static void broadcastToWeb(String sender, String message, boolean linked, boolean inGame) {
         long now = System.currentTimeMillis();
-        history.add(sender, message, now, linked);
+        history.add(sender, message, now, linked, inGame);
         ChatLogger.log(sender, message);
 
         Map<String, Object> payload = new HashMap<>();
@@ -69,6 +82,7 @@ public class ChatBridge {
         payload.put("message", message);
         payload.put("time", now);
         payload.put("linked", linked);
+        payload.put("inGame", inGame);
 
         String jsonPayload = GSON.toJson(payload);
 
@@ -84,12 +98,16 @@ public class ChatBridge {
             return;
 
         server.execute(() -> {
-            // Get In-Game Players
-            String[] players = server.getPlayerList().getPlayers().stream()
-                    .map(p -> p.getName().getString())
-                    .toArray(String[]::new);
-            onlinePlayerNamesLower = java.util.Arrays.stream(players)
-                    .map(String::toLowerCase)
+            // Get In-Game Players (with UUID, so the client can render head/avatar icons)
+            List<Map<String, Object>> players = new ArrayList<>();
+            for (var player : server.getPlayerList().getPlayers()) {
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("name", player.getName().getString());
+                entry.put("uuid", player.getUUID().toString());
+                players.add(entry);
+            }
+            onlinePlayerNamesLower = players.stream()
+                    .map(p -> ((String) p.get("name")).toLowerCase())
                     .collect(Collectors.toUnmodifiableSet());
 
             // Get Web Users (with their linked status, for the client to badge them)
@@ -123,6 +141,7 @@ public class ChatBridge {
             payload.put("message", entry.message());
             payload.put("time", entry.timestamp());
             payload.put("linked", entry.linked());
+            payload.put("inGame", entry.inGame());
             ctx.send(GSON.toJson(payload));
         }
     }

@@ -46,7 +46,7 @@ public class WebChatMod implements ModInitializer {
             String username = sender.getName().getString();
 
             // Broadcast to Web
-            ChatBridge.broadcastToWeb(username, content);
+            ChatBridge.broadcastGameMessage(username, content);
         });
 
         // 5. Register Join/Leave for User List Updates

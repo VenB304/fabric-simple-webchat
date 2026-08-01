@@ -192,6 +192,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .player-head {
+            width: 20px;
+            height: 20px;
+            margin-right: 6px;
+            border-radius: 2px;
+            image-rendering: pixelated;
+            flex-shrink: 0;
         }
 
         /* Mobile Styles */
@@ -269,7 +280,13 @@
             margin-right: 2px;
         }
 
+        .ingame-badge {
+            margin-right: 2px;
+            filter: grayscale(0.2);
+        }
+
         #link-btn,
+        #change-username-btn,
         #theme-toggle-row {
             background: transparent;
             border: 1px solid var(--border);
@@ -335,8 +352,13 @@
 
         #menu-btn:hover,
         #theme-btn:hover,
-        #link-btn:hover {
+        #link-btn:hover,
+        #change-username-btn:hover {
             background: var(--bg-alt-2);
+        }
+
+        .player-head {
+            vertical-align: middle;
         }
 
         @keyframes fadeIn {
@@ -443,6 +465,7 @@
         <div id="sidebar">
             <div class="sidebar-header">Account</div>
             <button id="link-btn" onclick="onLinkButtonClick()">🔗 Link Account</button>
+            <button id="change-username-btn" onclick="changeUsername()">👤 Change Username</button>
             <button id="theme-toggle-row" onclick="toggleTheme()">🌓 Toggle Theme</button>
             <div class="sidebar-header">Notifications</div>
             <div id="sound-row">
@@ -473,14 +496,19 @@
         const playerListDiv = document.getElementById('player-list');
         const webUserListDiv = document.getElementById('web-user-list');
 
+        const changeUsernameBtn = document.getElementById('change-username-btn');
+
         let ws;
         let reconnectInterval = 1000;
         let heartbeatInterval;
+        let intentionalDisconnect = false;
         let myUsername = "";
         let myLinkToken = localStorage.getItem('chat_link_token') || null;
         let isLinked = false;
         let passwordRequired = false;
         let defaultSoundFile = 'ding.mp3';
+        let showPlayerHeads = true;
+        let headUrlTemplate = 'https://mc-heads.net/avatar/{uuid}/20';
 
         const linkBtn = document.getElementById('link-btn');
 
@@ -517,10 +545,19 @@
             }
             passwordRequired = !!cfg.passwordRequired;
             passwordField.style.display = passwordRequired ? 'block' : 'none';
+            showPlayerHeads = cfg.showPlayerHeads !== false;
+            if (cfg.headUrlTemplate) headUrlTemplate = cfg.headUrlTemplate;
 
             const savedSound = localStorage.getItem('chat_sound') || 'default';
             document.getElementById('sound-select').value = savedSound;
             document.getElementById('mentions-only-toggle').checked = localStorage.getItem('chat_mentions_only') === 'true';
+
+            // Returning visitor: skip the login screen and reconnect automatically.
+            // (Skipped when a password is required since we don't persist it.)
+            const hasReturningIdentity = localStorage.getItem('chat_username') || myLinkToken;
+            if (!passwordRequired && hasReturningIdentity) {
+                startChat();
+            }
         }).catch(() => { });
 
         function toggleSidebar() {
@@ -583,7 +620,7 @@
                     const data = JSON.parse(event.data);
 
                     if (data.type === 'message') {
-                        addMessage(data.user, data.message, data.time, data.linked);
+                        addMessage(data.user, data.message, data.time, data.linked, data.inGame);
                         notifyIfNeeded(data.user, data.message);
                     } else if (data.type === 'playerList') {
                         updateLists(data.players, data.webUsers);
@@ -600,12 +637,17 @@
             };
 
             ws.onclose = (e) => {
+                if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+                if (intentionalDisconnect) {
+                    intentionalDisconnect = false;
+                    return; // User chose to change username - don't auto-reconnect over it
+                }
                 if (e.code === 4003) {
                     addConnectionDivider("Disconnected: incorrect password");
                     return;
                 }
                 addConnectionDivider("Disconnected from server");
-                if (heartbeatInterval) clearInterval(heartbeatInterval);
                 setTimeout(connect, reconnectInterval);
                 reconnectInterval = Math.min(reconnectInterval * 2, 30000);
             };
@@ -628,20 +670,43 @@
             audio.play().catch(() => { });
         }
 
+        // Word-boundary mention check so "@Steve" doesn't false-positive match "@Steve2".
+        function isMentioned(text, username) {
+            if (!username) return false;
+            const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp('@' + escaped + '(?![A-Za-z0-9_])', 'i').test(text);
+        }
+
         function notifyIfNeeded(user, text) {
             if (user === myUsername || user === "System") return;
             const mentionsOnly = localStorage.getItem('chat_mentions_only') === 'true';
-            const isMention = myUsername && text.includes("@" + myUsername);
+            const mentioned = isMentioned(text, myUsername);
             if (mentionsOnly) {
-                if (isMention) playSound();
+                if (mentioned) playSound();
             } else {
                 playSound();
             }
         }
 
+        function headImg(uuid, name) {
+            if (!showPlayerHeads || !uuid) return '';
+            const src = headUrlTemplate.replace('{uuid}', encodeURIComponent(uuid)).replace('{name}', encodeURIComponent(name));
+            return `<img class="player-head" src="${src}" alt="" onerror="this.style.display='none'" title="${escapeHtml(name)}">`;
+        }
+
+        // Current online players by lowercased name -> uuid, so chat messages can show a
+        // head icon for whoever's still online (no icon if they've since left, or for
+        // web guests who have no Minecraft account/UUID at all).
+        let onlinePlayerHeads = {};
+
         function updateLists(players, webUsers) {
-            globalMentionCandidates = players.concat(webUsers.map(u => u.name));
-            playerListDiv.innerHTML = players.map(p => `<div class="user-item" style="color:${getUsernameColor(p)}" onclick="mentionUser('${escapeHtml(p)}')">${escapeHtml(p)}</div>`).join('');
+            globalMentionCandidates = players.map(p => p.name).concat(webUsers.map(u => u.name));
+            onlinePlayerHeads = {};
+            players.forEach(p => { onlinePlayerHeads[p.name.toLowerCase()] = p.uuid; });
+
+            playerListDiv.innerHTML = players.map(p =>
+                `<div class="user-item" onclick="mentionUser('${escapeHtml(p.name)}')">${headImg(p.uuid, p.name)}<span style="color:${getUsernameColor(p.name)}">${escapeHtml(p.name)}</span></div>`
+            ).join('');
             webUserListDiv.innerHTML = webUsers.map(u =>
                 `<div class="user-item" style="color:${getUsernameColor(u.name)}" onclick="mentionUser('${escapeHtml(u.name)}')">${u.linked ? '<span class="linked-badge">✓</span>' : ''}${escapeHtml(u.name)}</div>`
             ).join('');
@@ -670,6 +735,7 @@
             localStorage.setItem('chat_username', username);
             linkBtn.textContent = '✓ Linked as ' + username;
             linkBtn.classList.add('linked');
+            changeUsernameBtn.style.display = 'none'; // name is tied to the verified account
             addConnectionDivider("Linked as " + username);
         }
 
@@ -679,7 +745,25 @@
             localStorage.removeItem('chat_link_token');
             linkBtn.textContent = '🔗 Link Account';
             linkBtn.classList.remove('linked');
+            changeUsernameBtn.style.display = 'block';
             addConnectionDivider("Account unlinked");
+        }
+
+        // Guest-only: forget the saved username and return to the login screen so a new
+        // one can be picked. Does not touch the link token - a linked user should use
+        // "Unlink" instead, since their name is tied to their verified account.
+        function changeUsername() {
+            intentionalDisconnect = true;
+            localStorage.removeItem('chat_username');
+            myUsername = "";
+            if (ws) {
+                try { ws.close(); } catch (e) { }
+            }
+            headerBar.style.display = 'none';
+            mainUi.style.display = 'none';
+            usernameInput.value = '';
+            loginScreen.style.display = 'flex';
+            usernameInput.focus();
         }
 
         function sendMessage() {
@@ -706,17 +790,19 @@
             input.focus();
         }
 
-        function addMessage(user, text, time, linked) {
+        function addMessage(user, text, time, linked, inGame) {
             const div = document.createElement('div');
             div.className = 'message';
-            if (myUsername && text.includes("@" + myUsername)) {
+            if (isMentioned(text, myUsername)) {
                 div.classList.add('mention');
             }
 
             const color = getUsernameColor(user);
             const timeHtml = time ? `<span class="time">${escapeHtml(formatTime(time))}</span>` : '';
-            const badgeHtml = linked ? '<span class="linked-badge">✓</span>' : '';
-            div.innerHTML = `${timeHtml}${badgeHtml}<span class="user" style="color: ${color}" onclick="mentionUser('${escapeHtml(user)}')">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
+            const badgeHtml = linked ? '<span class="linked-badge" title="Linked web session">✓</span>'
+                : (inGame ? '<span class="ingame-badge" title="Sent from in-game">🎮</span>' : '');
+            const senderHead = headImg(onlinePlayerHeads[user.toLowerCase()], user);
+            div.innerHTML = `${timeHtml}${senderHead}${badgeHtml}<span class="user" style="color: ${color}" onclick="mentionUser('${escapeHtml(user)}')">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
             chatContainer.appendChild(div);
             // Auto-scroll
             if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)

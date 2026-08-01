@@ -55,6 +55,16 @@ public class ModConfig {
     // at all, on top of (and independent from) account linking. Empty disables it.
     public String webPassword = "";
 
+    // Shows a Minecraft player head/avatar icon beside each online player's name in the
+    // web sidebar. Disable if you don't want player UUIDs/names sent to headUrlTemplate's host.
+    public boolean showPlayerHeads = true;
+
+    // URL template for fetching a player's head icon. {uuid} and {name} are substituted
+    // client-side. Defaults to the public mc-heads.net (Mojang skins). Point this at your
+    // own skin server instead - e.g. a self-hosted bluemap-custom-skin-server or similar
+    // proxy that resolves skins from SkinsRestorer/other sources - if you run one.
+    public String headUrlTemplate = "https://mc-heads.net/avatar/{uuid}/20";
+
     public static ModConfig getInstance() {
         if (instance == null) {
             load();
@@ -154,6 +164,9 @@ public class ModConfig {
         }
         if (webPassword == null) {
             webPassword = "";
+        }
+        if (headUrlTemplate == null || headUrlTemplate.isBlank()) {
+            headUrlTemplate = "https://mc-heads.net/avatar/{uuid}/20";
         }
     }
 }

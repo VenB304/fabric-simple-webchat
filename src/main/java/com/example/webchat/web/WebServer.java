@@ -147,6 +147,8 @@ public class WebServer {
             payload.put("webChatHeader", config.webChatHeader);
             payload.put("defaultSound", config.defaultSound);
             payload.put("passwordRequired", !config.webPassword.isEmpty());
+            payload.put("showPlayerHeads", config.showPlayerHeads);
+            payload.put("headUrlTemplate", config.headUrlTemplate);
             ctx.contentType("application/json").result(GSON.toJson(payload));
         });
 

@@ -11,9 +11,9 @@ A server-side Fabric mod that embeds a lightweight web server, allowing users to
     *   **@Mentions**: Highlighting when you're mentioned, `@` autocomplete dropdown (online players + web users), click any username to mention them.
     *   **Notification Sounds**: Default ding on new messages, mutable, with a "mentions only" mode.
     *   **Custom Branding**: Server owners can set the browser tab title and header text via config.
-    *   **User Lists**: View currently online players (in-game) and other web users.
+    *   **User Lists**: View currently online players (in-game) and other web users, with player head/avatar icons (source configurable — defaults to Mojang skins, can point at a self-hosted skin server).
     *   **Login System**: Simple username prompt upon connection (persisted via local storage).
-    *   **Account Linking**: Optionally prove you control an in-game account via a one-time code, without a password system. Linked users get their real username, a verified badge, and a persistent browser token so they don't need to re-link every visit.
+    *   **Account Linking**: Optionally prove you control an in-game account via a one-time code, without a password system. Linked users get their real username, a ✓ badge, and a persistent browser token so they don't need to re-link every visit. Messages typed directly in Minecraft get their own 🎮 badge instead — typing in-game is inherently verified, but is a different claim than "this browser is linked to an account", so they're shown distinctly.
     *   **Optional Shared Password**: A separate, independent gate — require a server-wide password to connect at all, on top of (or instead of) account linking.
     *   **History**: See the recent chat history (last 50 messages) immediately upon joining, with timestamps.
     *   **Connection Status**: Visual indicators for when you connect/disconnect.
@@ -111,7 +111,9 @@ Generated on first launch. Values are validated on load; out-of-range values are
   "webChatTitle": "Minecraft Web Chat",
   "webChatHeader": "Web Chat",
   "defaultSound": "ding.mp3",
-  "webPassword": ""
+  "webPassword": "",
+  "showPlayerHeads": true,
+  "headUrlTemplate": "https://mc-heads.net/avatar/{uuid}/20"
 }
 ```
 
@@ -122,6 +124,7 @@ Generated on first launch. Values are validated on load; out-of-range values are
 *   `requireLinkToChat` — if true, unlinked (guest) web users can still connect and read chat, but can't send messages until they link via `/webchat link`. See [Account Linking](#account-linking).
 *   `linkAttemptsPerMinute` — caps how many `LINK`/`UNLINK` attempts a single IP can make per minute, independent of the normal chat rate limit, so a script can't brute-force a 6-character link code by hammering guesses.
 *   `linkTokenExpiryDays` — how long a persistent link token stays valid before the browser must re-link. `0` (default) means tokens never expire.
+*   `showPlayerHeads` / `headUrlTemplate` — shows a head/avatar icon beside each online player in the sidebar. `headUrlTemplate` supports `{uuid}` and `{name}` placeholders and defaults to the public `mc-heads.net` (resolves Mojang skins). Point it at your own skin server instead — e.g. a self-hosted [bluemap-custom-skin-server](https://github.com/syorito-hatsuki/bluemap-custom-skin-server) or similar proxy that can resolve SkinsRestorer/custom skins — if you run one, so player UUIDs/names aren't sent to a third party.
 *   `enableTls` / `tlsKeystorePath` / `tlsKeystorePassword` — lets the mod serve HTTPS/WSS directly from a Java keystore (PKCS12 or JKS) instead of requiring a reverse proxy. If you'd rather terminate TLS at a reverse proxy (Nginx, Caddy, Cloudflare Tunnel), leave this disabled.
 *   `webChatTitle` / `webChatHeader` — browser tab title and in-app header text.
 *   `defaultSound` — the sound file served for the "Default" notification option; must exist under the mod's `web/` resources (only `ding.mp3` ships out of the box).
