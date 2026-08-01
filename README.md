@@ -7,10 +7,14 @@ A server-side Fabric mod that embeds a lightweight web server, allowing users to
 *   **Real-time Chat**: Bidirectional communication between the web interface and Minecraft chat.
 *   **Web Interface**:
     *   **Mobile Friendly**: Responsive design with a collapsible sidebar drawer for mobile devices.
-    *   **Dark Mode**: Sleek, modern dark UI.
+    *   **Light/Dark Theme**: Toggle button, persisted per-browser.
+    *   **@Mentions**: Highlighting when you're mentioned, `@` autocomplete dropdown (online players + web users), click any username to mention them.
+    *   **Notification Sounds**: Default ding on new messages, mutable, with a "mentions only" mode.
+    *   **Custom Branding**: Server owners can set the browser tab title and header text via config.
     *   **User Lists**: View currently online players (in-game) and other web users.
     *   **Login System**: Simple username prompt upon connection (persisted via local storage).
     *   **Account Linking**: Optionally prove you control an in-game account via a one-time code, without a password system. Linked users get their real username, a verified badge, and a persistent browser token so they don't need to re-link every visit.
+    *   **Optional Shared Password**: A separate, independent gate — require a server-wide password to connect at all, on top of (or instead of) account linking.
     *   **History**: See the recent chat history (last 50 messages) immediately upon joining, with timestamps.
     *   **Connection Status**: Visual indicators for when you connect/disconnect.
 *   **Moderation**:
@@ -48,6 +52,8 @@ http://<your-server-ip>:25585/web/index.html
 Leaving the username field blank and clicking Connect is fine — you'll be assigned a random `Guest-####` name.
 
 A `GET /health` endpoint is also available, returning JSON (`status`, `uptimeMillis`, `connectedWebUsers`) for uptime monitors or Crafty.
+
+A `GET /webchat-config.json` endpoint (public, unauthenticated) exposes just the branding/UI fields (`webChatTitle`, `webChatHeader`, `defaultSound`, `passwordRequired`) so the page can apply them before login.
 
 ## Moderation Commands
 
@@ -101,7 +107,11 @@ Generated on first launch. Values are validated on load; out-of-range values are
   "linkTokenExpiryDays": 0,
   "enableTls": false,
   "tlsKeystorePath": "",
-  "tlsKeystorePassword": ""
+  "tlsKeystorePassword": "",
+  "webChatTitle": "Minecraft Web Chat",
+  "webChatHeader": "Web Chat",
+  "defaultSound": "ding.mp3",
+  "webPassword": ""
 }
 ```
 
@@ -113,6 +123,9 @@ Generated on first launch. Values are validated on load; out-of-range values are
 *   `linkAttemptsPerMinute` — caps how many `LINK`/`UNLINK` attempts a single IP can make per minute, independent of the normal chat rate limit, so a script can't brute-force a 6-character link code by hammering guesses.
 *   `linkTokenExpiryDays` — how long a persistent link token stays valid before the browser must re-link. `0` (default) means tokens never expire.
 *   `enableTls` / `tlsKeystorePath` / `tlsKeystorePassword` — lets the mod serve HTTPS/WSS directly from a Java keystore (PKCS12 or JKS) instead of requiring a reverse proxy. If you'd rather terminate TLS at a reverse proxy (Nginx, Caddy, Cloudflare Tunnel), leave this disabled.
+*   `webChatTitle` / `webChatHeader` — browser tab title and in-app header text.
+*   `defaultSound` — the sound file served for the "Default" notification option; must exist under the mod's `web/` resources (only `ding.mp3` ships out of the box).
+*   `webPassword` — if non-empty, **every** web connection must supply this exact password to connect at all, independent of account linking. Empty (default) disables it.
 
 A web user whose chosen name matches a currently online player, or another connected web user, is automatically suffixed with digits to prevent impersonation/confusion.
 

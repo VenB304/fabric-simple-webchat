@@ -46,6 +46,15 @@ public class ModConfig {
     public String tlsKeystorePath = "";
     public String tlsKeystorePassword = "";
 
+    // UI customization, applied client-side via GET /webchat-config.json
+    public String webChatTitle = "Minecraft Web Chat";
+    public String webChatHeader = "Web Chat";
+    public String defaultSound = "ding.mp3";
+
+    // If non-empty, web users must supply this exact password (?password=) to connect
+    // at all, on top of (and independent from) account linking. Empty disables it.
+    public String webPassword = "";
+
     public static ModConfig getInstance() {
         if (instance == null) {
             load();
@@ -133,6 +142,18 @@ public class ModConfig {
         if (enableTls && (tlsKeystorePath == null || tlsKeystorePath.isBlank())) {
             WebChatMod.LOGGER.warn("enableTls is true but tlsKeystorePath is empty; disabling TLS");
             enableTls = false;
+        }
+        if (webChatTitle == null || webChatTitle.isBlank()) {
+            webChatTitle = "Minecraft Web Chat";
+        }
+        if (webChatHeader == null || webChatHeader.isBlank()) {
+            webChatHeader = "Web Chat";
+        }
+        if (defaultSound == null || defaultSound.isBlank()) {
+            defaultSound = "ding.mp3";
+        }
+        if (webPassword == null) {
+            webPassword = "";
         }
     }
 }

@@ -138,6 +138,18 @@ public class WebServer {
             ctx.contentType("application/json").result(GSON.toJson(payload));
         });
 
+        // Public, unauthenticated: lets the client apply title/branding/sound before
+        // it even opens a websocket, and learn whether a shared password is required.
+        app.get("/webchat-config.json", ctx -> {
+            ModConfig config = ModConfig.getInstance();
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("webChatTitle", config.webChatTitle);
+            payload.put("webChatHeader", config.webChatHeader);
+            payload.put("defaultSound", config.defaultSound);
+            payload.put("passwordRequired", !config.webPassword.isEmpty());
+            ctx.contentType("application/json").result(GSON.toJson(payload));
+        });
+
         app.ws("/chat", ws -> {
             ws.onConnect(ctx -> {
                 ctx.session.setIdleTimeout(java.time.Duration.ofMinutes(5));
@@ -148,6 +160,14 @@ public class WebServer {
                     String origin = ctx.header("Origin");
                     if (origin == null || !config.allowedOrigins.contains(origin)) {
                         ctx.closeSession(1008, "Origin not allowed");
+                        return;
+                    }
+                }
+
+                if (!config.webPassword.isEmpty()) {
+                    String password = ctx.queryParam("password");
+                    if (password == null || !password.equals(config.webPassword)) {
+                        ctx.closeSession(4003, "Incorrect password");
                         return;
                     }
                 }

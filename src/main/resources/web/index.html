@@ -4,21 +4,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Web Chat</title>
+    <title id="page-title">Minecraft Web Chat</title>
     <style>
         * {
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: #121212;
+            --bg-alt: #1e1e1e;
+            --bg-alt-2: #181818;
+            --bg-input: #2d2d2d;
+            --text: #e0e0e0;
+            --text-strong: #ffffff;
+            --text-sec: #888;
+            --text-dim: #666;
+            --border: #333;
+            --accent: #4fc3f7;
+            --overlay: rgba(0, 0, 0, 0.5);
+        }
+
+        body.light-mode {
+            --bg: #f2f2f2;
+            --bg-alt: #ffffff;
+            --bg-alt-2: #eaeaea;
+            --bg-input: #ffffff;
+            --text: #202020;
+            --text-strong: #000000;
+            --text-sec: #555;
+            --text-dim: #777;
+            --border: #ddd;
+            --accent: #0288d1;
+            --overlay: rgba(0, 0, 0, 0.3);
+        }
+
         /* Crucial for consistent sizing */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
+            /* Fallback for browsers without dvh support */
+            height: 100dvh;
+            /* Mobile browsers count 100vh as the full viewport including the area the
+               address bar covers, pushing content (input area) below the visible
+               screen until scrolled; dvh accounts for the actual visible viewport. */
             width: 100vw;
             overflow: hidden;
         }
@@ -30,7 +63,7 @@
             align-items: center;
             justify-content: center;
             height: 100%;
-            background: #0f0f0f;
+            background: var(--bg);
             z-index: 200;
             position: absolute;
             width: 100%;
@@ -39,7 +72,7 @@
         }
 
         #login-box {
-            background: #1e1e1e;
+            background: var(--bg-alt);
             padding: 40px;
             border-radius: 8px;
             text-align: center;
@@ -51,10 +84,11 @@
         #login-title {
             font-size: 24px;
             margin-bottom: 20px;
-            color: #4fc3f7;
+            color: var(--accent);
         }
 
-        #username-input {
+        #username-input,
+        #password-input {
             width: 100%;
             box-sizing: border-box;
             margin-bottom: 20px;
@@ -62,12 +96,16 @@
             padding: 12px;
         }
 
+        #password-field {
+            display: none;
+        }
+
         /* Main UI */
         #header-bar {
             display: none;
-            background: #181818;
+            background: var(--bg-alt-2);
             padding: 10px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border);
             justify-content: space-between;
             align-items: center;
             height: 50px;
@@ -76,16 +114,18 @@
 
         #header-title {
             font-weight: bold;
-            color: #4fc3f7;
+            color: var(--accent);
         }
 
-        #menu-btn {
+        #menu-btn,
+        #theme-btn {
             background: transparent;
-            border: 1px solid #333;
-            color: #ccc;
-            font-size: 20px;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 18px;
             padding: 5px 10px;
             cursor: pointer;
+            border-radius: 4px;
         }
 
         #main-ui {
@@ -114,7 +154,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            background: #121212;
+            background: var(--bg);
             -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
         }
@@ -122,8 +162,8 @@
         /* Sidebar (User List) */
         #sidebar {
             width: 220px;
-            background: #181818;
-            border-left: 1px solid #333;
+            background: var(--bg-alt-2);
+            border-left: 1px solid var(--border);
             padding: 10px;
             overflow-y: auto;
             display: flex;
@@ -133,7 +173,7 @@
 
         .sidebar-header {
             font-weight: bold;
-            color: #888;
+            color: var(--text-sec);
             margin-bottom: 10px;
             font-size: 14px;
             text-transform: uppercase;
@@ -147,10 +187,11 @@
         .user-item {
             padding: 6px 0;
             font-size: 14px;
-            border-bottom: 1px solid #222;
+            border-bottom: 1px solid var(--border);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
         }
 
         /* Mobile Styles */
@@ -182,7 +223,7 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.5);
+                background: var(--overlay);
                 z-index: 90;
             }
 
@@ -192,7 +233,7 @@
         }
 
         .message {
-            background: #1e1e1e;
+            background: var(--bg-alt);
             padding: 8px 12px;
             border-radius: 4px;
             animation: fadeIn 0.2s;
@@ -205,16 +246,22 @@
             max-width: 100%;
         }
 
+        .message.mention {
+            border-left: 3px solid #ffb300;
+            background: color-mix(in srgb, var(--bg-alt) 80%, #ffb300 20%);
+        }
+
         .message .time {
-            color: #666;
+            color: var(--text-dim);
             font-size: 11px;
             margin-right: 8px;
         }
 
         .message .user {
             font-weight: bold;
-            color: #4fc3f7;
+            color: var(--accent);
             margin-right: 8px;
+            cursor: pointer;
         }
 
         .linked-badge {
@@ -222,10 +269,11 @@
             margin-right: 2px;
         }
 
-        #link-btn {
+        #link-btn,
+        #theme-toggle-row {
             background: transparent;
-            border: 1px solid #333;
-            color: #ccc;
+            border: 1px solid var(--border);
+            color: var(--text);
             font-size: 13px;
             padding: 8px 10px;
             cursor: pointer;
@@ -240,26 +288,28 @@
         }
 
         .message .text {
-            color: #ffffff;
+            color: var(--text-strong);
             line-height: 1.4;
         }
 
         #input-area {
             padding: 15px;
-            background: #1e1e1e;
+            background: var(--bg-alt);
             display: flex;
             gap: 10px;
-            border-top: 1px solid #333;
+            border-top: 1px solid var(--border);
             align-items: center;
             flex-shrink: 0;
             /* Never shrink input area */
             width: 100%;
+            position: relative;
         }
 
-        input {
-            background: #2d2d2d;
-            border: 1px solid #444;
-            color: white;
+        input,
+        select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text);
             padding: 12px;
             border-radius: 4px;
             font-size: 16px;
@@ -283,6 +333,12 @@
             background: #2e7d32;
         }
 
+        #menu-btn:hover,
+        #theme-btn:hover,
+        #link-btn:hover {
+            background: var(--bg-alt-2);
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -294,6 +350,61 @@
                 transform: translateY(0);
             }
         }
+
+        /* Mention autocomplete dropdown */
+        #mention-dropdown {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            bottom: 70px;
+            left: 15px;
+            right: 15px;
+            max-height: 160px;
+            overflow-y: auto;
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .mention-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .mention-item:hover,
+        .mention-item.selected {
+            background: var(--bg-alt-2);
+        }
+
+        /* Sidebar sound controls */
+        #sound-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        #sound-select {
+            padding: 6px;
+            font-size: 13px;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-sec);
+            margin-bottom: 10px;
+        }
+
+        .checkbox-row input {
+            flex: none;
+            padding: 0;
+            width: auto;
+        }
     </style>
 </head>
 
@@ -304,6 +415,9 @@
         <div id="login-box">
             <div id="login-title">Join Server Chat</div>
             <input type="text" id="username-input" placeholder="Enter Username (optional)" maxlength="16">
+            <div id="password-field">
+                <input type="password" id="password-input" placeholder="Server Password">
+            </div>
             <button onclick="startChat()"
                 style="width:100%; padding: 12px; background: #0288d1; border:none; color:white; font-size:16px; font-weight:bold; border-radius:4px; cursor:pointer;">Connect</button>
         </div>
@@ -312,6 +426,7 @@
     <!-- Main UI -->
     <div id="header-bar">
         <div id="header-title">Web Chat</div>
+        <button id="theme-btn" onclick="toggleTheme()">🌓</button>
         <button id="menu-btn" onclick="toggleSidebar()">☰</button>
     </div>
 
@@ -319,14 +434,27 @@
         <div id="overlay" onclick="toggleSidebar()"></div>
         <div id="chat-area">
             <div id="chat-container"></div>
+            <div id="mention-dropdown"></div>
             <div id="input-area">
-                <input type="text" id="message" placeholder="Type a message..." maxlength="256">
+                <input type="text" id="message" placeholder="Type a message... (@ to mention)" maxlength="256">
                 <button id="send-btn" onclick="sendMessage()">Send</button>
             </div>
         </div>
         <div id="sidebar">
             <div class="sidebar-header">Account</div>
             <button id="link-btn" onclick="onLinkButtonClick()">🔗 Link Account</button>
+            <button id="theme-toggle-row" onclick="toggleTheme()">🌓 Toggle Theme</button>
+            <div class="sidebar-header">Notifications</div>
+            <div id="sound-row">
+                <select id="sound-select" onchange="updateSoundSetting()">
+                    <option value="none">Silent</option>
+                    <option value="default">Default</option>
+                </select>
+            </div>
+            <label class="checkbox-row">
+                <input type="checkbox" id="mentions-only-toggle" onchange="updateMentionsOnly()">
+                Notify on mentions only
+            </label>
             <div class="sidebar-header">Online Players</div>
             <div id="player-list"></div>
             <div class="sidebar-header">Web Users</div>
@@ -338,6 +466,8 @@
         const loginScreen = document.getElementById('login-screen');
         const mainUi = document.getElementById('main-ui');
         const usernameInput = document.getElementById('username-input');
+        const passwordField = document.getElementById('password-field');
+        const passwordInput = document.getElementById('password-input');
         const chatContainer = document.getElementById('chat-container');
         const messageInput = document.getElementById('message');
         const playerListDiv = document.getElementById('player-list');
@@ -349,6 +479,8 @@
         let myUsername = "";
         let myLinkToken = localStorage.getItem('chat_link_token') || null;
         let isLinked = false;
+        let passwordRequired = false;
+        let defaultSoundFile = 'ding.mp3';
 
         const linkBtn = document.getElementById('link-btn');
 
@@ -361,6 +493,36 @@
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
 
+        // --- Theme ---
+        const savedTheme = localStorage.getItem('chat_theme') || 'dark';
+        if (savedTheme === 'light') document.body.classList.add('light-mode');
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('chat_theme', isLight ? 'light' : 'dark');
+        }
+
+        // --- Server-provided branding/config (public, unauthenticated) ---
+        fetch('/webchat-config.json').then(r => r.json()).then(cfg => {
+            if (cfg.webChatTitle) {
+                document.title = cfg.webChatTitle;
+                document.getElementById('login-title').innerText = cfg.webChatTitle;
+            }
+            if (cfg.webChatHeader) {
+                document.getElementById('header-title').innerText = cfg.webChatHeader;
+            }
+            if (cfg.defaultSound) {
+                defaultSoundFile = cfg.defaultSound;
+            }
+            passwordRequired = !!cfg.passwordRequired;
+            passwordField.style.display = passwordRequired ? 'block' : 'none';
+
+            const savedSound = localStorage.getItem('chat_sound') || 'default';
+            document.getElementById('sound-select').value = savedSound;
+            document.getElementById('mentions-only-toggle').checked = localStorage.getItem('chat_mentions_only') === 'true';
+        }).catch(() => { });
+
         function toggleSidebar() {
             sidebar.classList.toggle('open');
             overlay.classList.toggle('open');
@@ -372,6 +534,10 @@
 
             if (name) {
                 localStorage.setItem('chat_username', myUsername);
+            }
+
+            if (passwordRequired && !passwordInput.value) {
+                return alert("This server requires a password to connect.");
             }
 
             loginScreen.style.display = 'none';
@@ -398,6 +564,9 @@
             if (myLinkToken) {
                 url += `&token=${encodeURIComponent(myLinkToken)}`;
             }
+            if (passwordRequired && passwordInput.value) {
+                url += `&password=${encodeURIComponent(passwordInput.value)}`;
+            }
             ws = new WebSocket(url);
 
             ws.onopen = () => {
@@ -415,6 +584,7 @@
 
                     if (data.type === 'message') {
                         addMessage(data.user, data.message, data.time, data.linked);
+                        notifyIfNeeded(data.user, data.message);
                     } else if (data.type === 'playerList') {
                         updateLists(data.players, data.webUsers);
                     } else if (data.type === 'linked') {
@@ -429,7 +599,11 @@
                 }
             };
 
-            ws.onclose = () => {
+            ws.onclose = (e) => {
+                if (e.code === 4003) {
+                    addConnectionDivider("Disconnected: incorrect password");
+                    return;
+                }
                 addConnectionDivider("Disconnected from server");
                 if (heartbeatInterval) clearInterval(heartbeatInterval);
                 setTimeout(connect, reconnectInterval);
@@ -437,10 +611,39 @@
             };
         }
 
+        // --- Notification sounds ---
+        function updateSoundSetting() {
+            localStorage.setItem('chat_sound', document.getElementById('sound-select').value);
+        }
+
+        function updateMentionsOnly() {
+            localStorage.setItem('chat_mentions_only', document.getElementById('mentions-only-toggle').checked);
+        }
+
+        function playSound() {
+            const val = localStorage.getItem('chat_sound') || 'default';
+            if (val === 'none') return;
+            const src = val === 'default' ? defaultSoundFile : val;
+            const audio = new Audio(src);
+            audio.play().catch(() => { });
+        }
+
+        function notifyIfNeeded(user, text) {
+            if (user === myUsername || user === "System") return;
+            const mentionsOnly = localStorage.getItem('chat_mentions_only') === 'true';
+            const isMention = myUsername && text.includes("@" + myUsername);
+            if (mentionsOnly) {
+                if (isMention) playSound();
+            } else {
+                playSound();
+            }
+        }
+
         function updateLists(players, webUsers) {
-            playerListDiv.innerHTML = players.map(p => `<div class="user-item" style="color:${getUsernameColor(p)}">${escapeHtml(p)}</div>`).join('');
+            globalMentionCandidates = players.concat(webUsers.map(u => u.name));
+            playerListDiv.innerHTML = players.map(p => `<div class="user-item" style="color:${getUsernameColor(p)}" onclick="mentionUser('${escapeHtml(p)}')">${escapeHtml(p)}</div>`).join('');
             webUserListDiv.innerHTML = webUsers.map(u =>
-                `<div class="user-item" style="color:${getUsernameColor(u.name)}">${u.linked ? '<span class="linked-badge">✓</span>' : ''}${escapeHtml(u.name)}</div>`
+                `<div class="user-item" style="color:${getUsernameColor(u.name)}" onclick="mentionUser('${escapeHtml(u.name)}')">${u.linked ? '<span class="linked-badge">✓</span>' : ''}${escapeHtml(u.name)}</div>`
             ).join('');
         }
 
@@ -486,6 +689,7 @@
                 // Now sending generic text, username is bound to session
                 ws.send(msg);
                 messageInput.value = '';
+                hideSuggestions();
             }
         }
 
@@ -495,13 +699,24 @@
             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
+        // --- Mentions: click-to-mention helper ---
+        function mentionUser(username) {
+            const input = messageInput;
+            input.value += (input.value.length > 0 && !input.value.endsWith(' ') ? ' ' : '') + "@" + username + " ";
+            input.focus();
+        }
+
         function addMessage(user, text, time, linked) {
             const div = document.createElement('div');
             div.className = 'message';
+            if (myUsername && text.includes("@" + myUsername)) {
+                div.classList.add('mention');
+            }
+
             const color = getUsernameColor(user);
             const timeHtml = time ? `<span class="time">${escapeHtml(formatTime(time))}</span>` : '';
             const badgeHtml = linked ? '<span class="linked-badge">✓</span>' : '';
-            div.innerHTML = `${timeHtml}${badgeHtml}<span class="user" style="color: ${color}">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
+            div.innerHTML = `${timeHtml}${badgeHtml}<span class="user" style="color: ${color}" onclick="mentionUser('${escapeHtml(user)}')">${escapeHtml(user)}</span><span class="text">${escapeHtml(text)}</span>`;
             chatContainer.appendChild(div);
             // Auto-scroll
             if (chatContainer.scrollHeight - chatContainer.scrollTop < 1000)
@@ -511,7 +726,7 @@
         function addSystemMessage(text) {
             const div = document.createElement('div');
             div.className = 'message';
-            div.style.color = '#888';
+            div.style.color = 'var(--text-sec)';
             div.style.fontStyle = 'italic';
             div.innerText = "[System] " + text;
             chatContainer.appendChild(div);
@@ -520,9 +735,9 @@
 
         function addConnectionDivider(text) {
             const div = document.createElement('div');
-            div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: #555; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
+            div.style.cssText = "display: flex; align-items: center; justify-content: center; margin: 10px 0; color: var(--text-sec); font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;";
 
-            const line = "flex: 1; height: 1px; background: #333; margin: 0 10px;";
+            const line = "flex: 1; height: 1px; background: var(--border); margin: 0 10px;";
             div.innerHTML = `<div style="${line}"></div><span>${escapeHtml(text)}</span><div style="${line}"></div>`;
 
             chatContainer.appendChild(div);
@@ -535,10 +750,90 @@
             for (let i = 0; i < username.length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash);
             return COLORS[Math.abs(hash % COLORS.length)];
         }
-        function escapeHtml(text) { return text.replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', '\'': '&#039;' }[m]; }); }
+        function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', '\'': '&#039;' }[m]; }); }
 
-        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && document.getElementById('mention-dropdown').style.display !== 'flex') sendMessage(); });
         usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startChat(); });
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') startChat(); });
+
+        // --- Mention autocomplete ---
+        const dropdown = document.getElementById('mention-dropdown');
+        let globalMentionCandidates = [];
+        let selectedIndex = 0;
+        let mentionMatches = [];
+
+        messageInput.addEventListener('input', function () {
+            const val = this.value;
+            const cursorPos = this.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            const lastAt = textBeforeCursor.lastIndexOf('@');
+
+            if (lastAt !== -1) {
+                const query = textBeforeCursor.substring(lastAt + 1);
+                if (!query.includes(' ')) {
+                    showSuggestions(query);
+                    return;
+                }
+            }
+            hideSuggestions();
+        });
+
+        messageInput.addEventListener('keydown', function (e) {
+            if (dropdown.style.display === 'flex') {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(0, selectedIndex - 1);
+                    renderSuggestions();
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(mentionMatches.length - 1, selectedIndex + 1);
+                    renderSuggestions();
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                    e.preventDefault();
+                    if (mentionMatches[selectedIndex]) selectSuggestion(mentionMatches[selectedIndex]);
+                } else if (e.key === 'Escape') {
+                    hideSuggestions();
+                }
+            }
+        });
+
+        function showSuggestions(query) {
+            mentionMatches = [...new Set(globalMentionCandidates)].filter(u => u.toLowerCase().startsWith(query.toLowerCase()));
+            if (mentionMatches.length === 0) {
+                hideSuggestions();
+                return;
+            }
+            selectedIndex = 0;
+            dropdown.style.display = 'flex';
+            renderSuggestions();
+        }
+
+        function hideSuggestions() {
+            dropdown.style.display = 'none';
+        }
+
+        function renderSuggestions() {
+            dropdown.innerHTML = '';
+            mentionMatches.forEach((user, idx) => {
+                const div = document.createElement('div');
+                div.className = 'mention-item' + (idx === selectedIndex ? ' selected' : '');
+                div.innerText = user;
+                div.onclick = () => selectSuggestion(user);
+                dropdown.appendChild(div);
+            });
+        }
+
+        function selectSuggestion(username) {
+            const val = messageInput.value;
+            const cursorPos = messageInput.selectionStart;
+            const textBeforeCursor = val.substring(0, cursorPos);
+            const lastAt = textBeforeCursor.lastIndexOf('@');
+            const before = val.substring(0, lastAt);
+            const after = val.substring(cursorPos);
+            messageInput.value = before + "@" + username + " " + after;
+            hideSuggestions();
+            messageInput.focus();
+        }
     </script>
 </body>
 
