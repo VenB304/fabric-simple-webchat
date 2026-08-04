@@ -160,3 +160,7 @@ The output jar will be located in `build/libs/`. Run `./gradlew test` to run the
 ## License
 
 MIT
+
+## AI Acknowledgement
+
+This project was built with significant assistance from AI coding tools — primarily **Claude** (Anthropic) — used throughout development for architecture design, code generation, debugging, and documentation. Human direction, domain knowledge, and creative decisions drove the project; AI accelerated the implementation.
