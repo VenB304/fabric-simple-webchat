@@ -74,7 +74,9 @@ public final class WebChatCommand {
                         .requires(Commands.hasPermission(Commands.LEVEL_ADMINS))
                         .executes(ctx -> {
                             ModConfig.load();
-                            ctx.getSource().sendSuccess(() -> Component.literal("Web Chat config reloaded")
+                            int pruned = LinkManager.pruneExpiredTokens();
+                            ctx.getSource().sendSuccess(() -> Component.literal(
+                                    "Web Chat config reloaded" + (pruned > 0 ? " (" + pruned + " expired link(s) pruned)" : ""))
                                     .withStyle(ChatFormatting.GREEN), true);
                             return 1;
                         }))

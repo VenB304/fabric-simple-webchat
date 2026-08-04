@@ -20,17 +20,22 @@ public class RateLimiter {
 
         long[] data = windows.computeIfAbsent(key, k -> new long[] { 0, now + WINDOW_MILLIS });
 
-        if (now > data[1]) {
-            data[0] = 0;
-            data[1] = now + WINDOW_MILLIS;
-        }
+        // The array itself (not just the map) is shared and mutated in place, so concurrent
+        // callers for the same key (multiple tabs, or just concurrent request threads) need
+        // to be serialized here - the map's own thread-safety doesn't cover that.
+        synchronized (data) {
+            if (now > data[1]) {
+                data[0] = 0;
+                data[1] = now + WINDOW_MILLIS;
+            }
 
-        if (data[0] < maxPerWindow) {
-            data[0]++;
-            return true;
-        }
+            if (data[0] < maxPerWindow) {
+                data[0]++;
+                return true;
+            }
 
-        return false;
+            return false;
+        }
     }
 
     public boolean tryAcquire(String key, int maxPerWindow) {

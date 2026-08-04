@@ -75,6 +75,28 @@ public class LinkManager {
         return Optional.of(new LinkedAccount(entry.uuid(), entry.username()));
     }
 
+    /**
+     * Removes every token past {@code linkTokenExpiryDays}. Unlike {@link #lookupToken}'s
+     * lazy per-token expiry check, this catches tokens that expired but were never looked
+     * up again, which would otherwise sit in memory and links.json forever.
+     *
+     * @return the number of tokens removed
+     */
+    public static int pruneExpiredTokens() {
+        int expiryDays = ModConfig.getInstance().linkTokenExpiryDays;
+        if (expiryDays <= 0) {
+            return 0;
+        }
+        long cutoff = System.currentTimeMillis() - expiryDays * DAY_MILLIS;
+        int before = tokens.size();
+        tokens.values().removeIf(entry -> entry.issuedAt() < cutoff);
+        int removed = before - tokens.size();
+        if (removed > 0) {
+            save();
+        }
+        return removed;
+    }
+
     public static void revokeToken(String token) {
         if (token != null && tokens.remove(token) != null) {
             save();

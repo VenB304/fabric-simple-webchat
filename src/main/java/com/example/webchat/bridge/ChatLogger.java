@@ -4,8 +4,11 @@ import com.example.webchat.WebChatMod;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -37,7 +40,7 @@ public final class ChatLogger {
 
             String line = "[" + TIMESTAMP_FORMAT.format(Instant.now()) + "] " + user + ": " + message
                     + System.lineSeparator();
-            try (FileWriter writer = new FileWriter(LOG_FILE, true)) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(LOG_FILE, true), StandardCharsets.UTF_8)) {
                 writer.write(line);
             }
         } catch (IOException e) {

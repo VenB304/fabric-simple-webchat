@@ -159,9 +159,8 @@ public class WebServer {
 
         app.ws("/chat", ws -> {
             ws.onConnect(ctx -> {
-                ctx.session.setIdleTimeout(java.time.Duration.ofMinutes(5));
-
                 ModConfig config = ModConfig.getInstance();
+                ctx.session.setIdleTimeout(java.time.Duration.ofSeconds(config.heartbeatTimeoutSeconds));
 
                 if (!config.allowedOrigins.isEmpty()) {
                     String origin = ctx.header("Origin");
@@ -173,7 +172,12 @@ public class WebServer {
 
                 if (!config.webPassword.isEmpty()) {
                     String password = ctx.queryParam("password");
-                    if (password == null || !password.equals(config.webPassword)) {
+                    // Constant-time compare - a naive .equals() short-circuits on the first
+                    // mismatched byte, leaking a timing signal an attacker could use to guess
+                    // the password one character at a time.
+                    if (password == null || !java.security.MessageDigest.isEqual(
+                            password.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            config.webPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
                         ctx.closeSession(4003, "Incorrect password");
                         return;
                     }
@@ -212,22 +216,12 @@ public class WebServer {
                     if (username.length() > 16)
                         username = username.substring(0, 16);
                     username = username.replaceAll("[^a-zA-Z0-9_]", ""); // Strict characters
-
-                    // Deduplicate
-                    // If the name is taken by another web user, or matches an online player's
-                    // name (which would otherwise let a web user impersonate them), append digits
-                    String finalName = username;
-                    boolean conflict = ChatBridge.sessionUsernames.containsValue(finalName)
-                            || ChatBridge.isOnlinePlayerName(finalName);
-                    if (conflict) {
-                        finalName = username + "_" + (int) (Math.random() * 999);
-                    }
-                    username = finalName;
                 }
 
-                ChatBridge.activeSessions.add(ctx);
-                ChatBridge.sessionUsernames.put(ctx, username);
-                ChatBridge.sessionLinked.put(ctx, linked);
+                // Registers the session and, for guest names, atomically resolves any conflict
+                // with another connected web user or an online player's name (which would
+                // otherwise let a web user impersonate them) by appending digits.
+                username = ChatBridge.register(ctx, username, linked, !linked);
                 ctx.attribute("username", username);
                 ctx.attribute("ip", realIp);
                 ctx.attribute("linked", linked);

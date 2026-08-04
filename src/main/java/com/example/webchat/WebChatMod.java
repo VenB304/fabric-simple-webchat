@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import com.example.webchat.config.ModConfig;
 import com.example.webchat.bridge.ChatBridge;
 import com.example.webchat.command.WebChatCommand;
+import com.example.webchat.link.LinkManager;
 import com.example.webchat.web.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class WebChatMod implements ModInitializer {
 
         // 1. Load Config
         ModConfig.load();
+        LinkManager.pruneExpiredTokens();
 
         // 2. Register Commands
         WebChatCommand.register();

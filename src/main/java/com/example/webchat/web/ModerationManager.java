@@ -109,7 +109,12 @@ public class ModerationManager {
         try {
             Files.createDirectories(BAN_FILE.getParentFile().toPath());
             try (FileWriter writer = new FileWriter(BAN_FILE)) {
-                GSON.toJson(bannedIps, writer);
+                // Collections.synchronizedSet requires manual synchronization for iteration
+                // (which toJson does internally) - a concurrent ban()/unban() during a save
+                // would otherwise risk a ConcurrentModificationException.
+                synchronized (bannedIps) {
+                    GSON.toJson(bannedIps, writer);
+                }
             }
         } catch (IOException e) {
             WebChatMod.LOGGER.error("Failed to write {}", BAN_FILE.getName(), e);

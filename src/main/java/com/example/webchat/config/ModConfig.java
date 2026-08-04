@@ -29,6 +29,13 @@ public class ModConfig {
     public int historyMaxAgeMinutes = 30;
     public int historyMaxCount = 50;
 
+    // How long a websocket connection can go without any data (the client pings every 20s)
+    // before it's considered dead and force-closed. Catches silent drops - phone wifi turned
+    // off, laptop put to sleep, etc. - that never send a proper close frame, so onClose (and
+    // the "left the chat" notice / session cleanup) would otherwise wait on Jetty's default
+    // idle timeout instead.
+    public int heartbeatTimeoutSeconds = 45;
+
     // If true, unlinked (guest) web users can view chat but not send messages until
     // they run /webchat link in-game and redeem the code on the web page.
     public boolean requireLinkToChat = false;
