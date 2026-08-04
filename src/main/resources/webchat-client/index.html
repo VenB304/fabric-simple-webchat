@@ -500,6 +500,7 @@
         const changeUsernameBtn = document.getElementById('change-username-btn');
 
         let ws;
+        let seenMessageKeys = new Set();
         let reconnectInterval = 1000;
         let heartbeatInterval;
         let intentionalDisconnect = false;
@@ -621,6 +622,12 @@
                     const data = JSON.parse(event.data);
 
                     if (data.type === 'message') {
+                        // History re-sent on reconnect overlaps with what's already
+                        // rendered from before the drop, so skip anything already shown.
+                        const key = `${data.time}|${data.user}|${data.message}`;
+                        if (seenMessageKeys.has(key)) return;
+                        seenMessageKeys.add(key);
+
                         addMessage(data.user, data.message, data.time, data.linked, data.inGame);
                         notifyIfNeeded(data.user, data.message);
                     } else if (data.type === 'playerList') {
@@ -706,18 +713,39 @@
         // (assumes a standard 64-wide skin sheet; face is at (8,8)-(16,16), hat overlay
         // layer at (40,8)-(48,16)) rather than fetching a pre-rendered avatar.
         function skinHeadHtml(skinUrl, name, size) {
-            const safeUrl = skinUrl.replace(/'/g, '%27');
+            const safeUrl = skinUrl.replace(/'/g, '%27').replace(/"/g, '%22');
             const scale = size / 8;
             const bg = Math.round(64 * scale);
             const off = Math.round(8 * scale);
             return `<span class="player-head" style="background-image:url('${safeUrl}');background-size:${bg}px ${bg}px;background-position:-${off}px -${off}px" title="${escapeHtml(name)}"></span>`;
         }
 
+        // CSS background-image has no onerror hook, so a dead/unreachable texture URL (Mojang
+        // CDN down, internet dropped mid-session, etc.) would otherwise render as a permanently
+        // blank box. Preload each URL once via a plain Image() and remember the result, so
+        // failures fall back to the mc-heads avatar (which has its own onerror) instead.
+        let skinLoadStatus = {};
+        function preloadSkin(url) {
+            if (skinLoadStatus[url]) return;
+            skinLoadStatus[url] = 'pending';
+            const img = new Image();
+            img.onload = () => { skinLoadStatus[url] = 'ok'; };
+            img.onerror = () => { skinLoadStatus[url] = 'fail'; updateLists(lastPlayers, lastWebUsers); };
+            img.src = url;
+        }
+
         function headHtml(player, name) {
             if (!showPlayerHeads || !player) return '';
+            // Both branches below fetch from an external host (Mojang's texture CDN, or
+            // mc-heads.net) - skip entirely while offline so the browser doesn't spend a
+            // request per head trying (and failing/logging) to reach a host it can't see.
+            if (!navigator.onLine) return '';
             if (player.skin) {
                 const skinUrl = extractSkinUrl(player.skin);
-                if (skinUrl) return skinHeadHtml(skinUrl, name, 20);
+                if (skinUrl && skinLoadStatus[skinUrl] !== 'fail') {
+                    preloadSkin(skinUrl);
+                    return skinHeadHtml(skinUrl, name, 20);
+                }
             }
             if (player.uuid) {
                 const src = headUrlTemplate.replace('{uuid}', encodeURIComponent(player.uuid)).replace('{name}', encodeURIComponent(name));
@@ -730,8 +758,12 @@
         // show a head icon for whoever's still online (no icon if they've since left, or
         // for web guests who have no Minecraft account at all).
         let onlinePlayerHeads = {};
+        let lastPlayers = [];
+        let lastWebUsers = [];
 
         function updateLists(players, webUsers) {
+            lastPlayers = players;
+            lastWebUsers = webUsers;
             globalMentionCandidates = players.map(p => p.name).concat(webUsers.map(u => u.name));
             onlinePlayerHeads = {};
             players.forEach(p => { onlinePlayerHeads[p.name.toLowerCase()] = p; });
@@ -743,6 +775,10 @@
                 `<div class="user-item" style="color:${getUsernameColor(u.name)}" onclick="mentionUser('${escapeHtml(u.name)}')">${u.linked ? '<span class="linked-badge">✓</span>' : ''}${escapeHtml(u.name)}</div>`
             ).join('');
         }
+
+        // Player heads are skipped entirely while offline (see headHtml) - once connectivity
+        // returns, re-render the list so heads that were blank get filled back in.
+        window.addEventListener('online', () => updateLists(lastPlayers, lastWebUsers));
 
         function onLinkButtonClick() {
             if (isLinked) {

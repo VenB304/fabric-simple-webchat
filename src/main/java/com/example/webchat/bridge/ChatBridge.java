@@ -1,5 +1,6 @@
 package com.example.webchat.bridge;
 
+import com.example.webchat.WebChatMod;
 import com.example.webchat.config.ModConfig;
 import io.javalin.websocket.WsContext;
 import net.minecraft.server.MinecraftServer;
@@ -42,11 +43,8 @@ public class ChatBridge {
                     .append(Component.literal(username).withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(": " + message).withStyle(ChatFormatting.WHITE));
 
-            // Broadcast to all players
+            // Broadcast to all players (also logs to server console)
             server.getPlayerList().broadcastSystemMessage(chatText, false);
-
-            // Log to server console
-            server.sendSystemMessage(chatText);
 
             // Also echo back to web users
             broadcastToWeb(username, message, linked);
@@ -87,9 +85,22 @@ public class ChatBridge {
         String jsonPayload = GSON.toJson(payload);
 
         for (WsContext ctx : activeSessions) {
+            sendSafely(ctx, jsonPayload);
+        }
+    }
+
+    /**
+     * Sends to one session, swallowing failures so one flaky/closing connection can't abort
+     * a broadcast loop and drop the message for every recipient after it (the session can
+     * also close in the gap between an isOpen() check and send() itself).
+     */
+    private static void sendSafely(WsContext ctx, String json) {
+        try {
             if (ctx.session.isOpen()) {
-                ctx.send(jsonPayload);
+                ctx.send(json);
             }
+        } catch (Exception e) {
+            WebChatMod.LOGGER.warn("Failed to send to a web session, dropping it", e);
         }
     }
 
@@ -136,8 +147,7 @@ public class ChatBridge {
             String json = GSON.toJson(payload);
 
             for (WsContext ctx : activeSessions) {
-                if (ctx.session.isOpen())
-                    ctx.send(json);
+                sendSafely(ctx, json);
             }
         });
     }
@@ -151,7 +161,7 @@ public class ChatBridge {
             payload.put("time", entry.timestamp());
             payload.put("linked", entry.linked());
             payload.put("inGame", entry.inGame());
-            ctx.send(GSON.toJson(payload));
+            sendSafely(ctx, GSON.toJson(payload));
         }
     }
 
@@ -193,6 +203,25 @@ public class ChatBridge {
             }
         }
         return false;
+    }
+
+    /**
+     * Atomically resolves a conflict-free display name and registers the session under it.
+     * {@code dedupe} should be false for linked accounts (their username is authoritative,
+     * not subject to collision suffixing) and true for guest names. Synchronized so two
+     * connections arriving at the same instant can't both pass the conflict check before
+     * either is visible to the other.
+     */
+    public static synchronized String register(WsContext ctx, String requestedUsername, boolean linked,
+            boolean dedupe) {
+        String finalName = requestedUsername;
+        if (dedupe && (sessionUsernames.containsValue(finalName) || isOnlinePlayerName(finalName))) {
+            finalName = requestedUsername + "_" + (int) (Math.random() * 999);
+        }
+        activeSessions.add(ctx);
+        sessionUsernames.put(ctx, finalName);
+        sessionLinked.put(ctx, linked);
+        return finalName;
     }
 
     /** Clears all per-session state for a closed websocket connection. */
