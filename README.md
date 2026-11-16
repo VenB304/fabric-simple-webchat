@@ -1,4 +1,4 @@
-# Minecraft Web Chat Mod (Fabric 26.2+)
+# Minecraft Web Chat Mod (Fabric 26.3+)
 
 A server-side Fabric mod that embeds a lightweight web server, allowing users to chat with players in-game directly from their web browser.
 
@@ -142,7 +142,7 @@ All of the mod's runtime files live under a single `config/web-chat-mod/` folder
 
 ## Building from Source
 
-This project uses Gradle and targets Minecraft 26.2, which ships unobfuscated (no Yarn mappings) via Fabric Loom.
+This project uses Gradle and targets Minecraft 26.3, which ships unobfuscated (no Yarn mappings) via Fabric Loom.
 
 **Prerequisites:**
 *   Java 25 JDK
